@@ -1,0 +1,15 @@
+{
+  "name": "Centrometal Cloud",
+  "content_in_root": false,
+  "homeassistant": "2024.11.0",
+  "country": [
+    "HR",
+    "RO",
+    "BA",
+    "RS",
+    "SI",
+    "HU",
+    "AT",
+    "DE"
+  ]
+}

@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.venv/
+venv/
+
+# Home Assistant local files
+.storage/
+deps/
+tts/
+*.db
+*.db-shm
+*.db-wal
+home-assistant.log*
+secrets.yaml
+
+# Editors and OS
+.DS_Store
+.idea/
+.vscode/
+*.swp
