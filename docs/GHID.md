@@ -26,6 +26,11 @@ A Home Assistant integration (custom component, installed through HACS) for Cent
 
 Source for scheme 43: boiler manual, page 57.
 
+**What runs on the owner's Home Assistant (since 06.11.2026):** `centrometal-local-mqtt` is the primary integration, in `local` mode. **Centrometal Cloud is not installed there**, and the old `hass-centrometal-boiler` was removed. Consequences:
+- In `local` mode the module's traffic goes to Home Assistant, not to the portal, so the portal does not see the boiler and this integration would receive nothing. It cannot be checked on the owner's boiler while that holds; changes here are verified with the tests (`tests/`, `tests_ha/`) and the captures only.
+- The MQTT integration holds the entity IDs this one would use (`sensor.peltec_ii_lambda_…`); installed next to it, Centrometal Cloud would get `_2` suffixes.
+- Going back to the cloud: remove the MQTT integration and app, delete the router's destination-NAT rule (and any local DNS record for `portal.centrometal.hr`), let the module reconnect to the portal, then install Centrometal Cloud.
+
 ## 3. Installing and updating
 
 1. HACS → Centrometal Cloud → ⋮ → **Update information** → install the new version (or manually, from the release archive).
@@ -154,12 +159,12 @@ The repository started on 06.11.2026 with a single commit at 1.0.0, at the owner
 ## 9. Open items
 
 1. **`B_REO` ("DHW Recirculation Pump") versus P2**: on a PelTec II the recirculation pump is always wired to a P relay (the manual puts it on one of P1–P4 in every scheme that has one), so `B_REO` probably duplicates "P2 DHW Recirculation Pump (K1)". The owner leaned towards "only the `B_P` pumps, not `B_RE`". The change was drafted (drop `B_REO` from the PelTec II table; the older PelTec keeps it; `B_REC` stays) and then stopped: **not applied, to be discussed**.
-2. Check on the real Home Assistant: the pump names, the Configuration entity, a full burn S0 → D → S7.
+2. Check on the real Home Assistant: the pump names, the Configuration entity, a full burn S0 → D → S7. Not possible while the owner runs the MQTT integration in `local` mode (section 2).
 3. Check the automations against the stage texts (the table in section 4).
 4. The fixtures with `B_KONF` 12, of unclear origin.
 5. Inclusion in the HACS default list (section 10): to be submitted by the owner.
 6. Ask GitHub Support to purge the old commits still reachable through pull requests #1–#3 of the archived `hass-centrometal-boiler` (section 11).
-7. **Settings missing from the portal's snapshot.** The snapshot does not always carry the editable settings (owner's diagnostics: on 25.10.2026 only 576, 67, 68 and 70; on 04.11.2026 only 576), although parameter-list lists all seven; they come back when the settings page is opened on the portal website. The integration therefore asks the controller for every listed setting whose value or minimum is missing, with `POST /api/inst/control/advanced/{id}` `{"parameters": {"PRD <slot>": "VAL"}}`, after setup and at most hourly while one is missing; a slot that arrives later fills its entity in; the last known value is shown across restarts (`Restored: true`). Source of the request: the original library's first commit (ccc8f34, 2021, `{"PRD 222": "VAL"}` from the portal web app); `centrometal-local-mqtt` sends the same read to the module. The owner confirmed on 04.11.2026 that it works on the real boiler. A value without `PMIN`/`PMAX` is shown but cannot be written.
+7. **Settings missing from the portal's snapshot.** The snapshot does not always carry the editable settings (owner's diagnostics: on 25.10.2026 only 576, 67, 68 and 70; on 04.11.2026 only 576), although parameter-list lists all seven; they come back when the settings page is opened on the portal website. The integration therefore asks the controller for every listed setting whose value or minimum is missing, with `POST /api/inst/control/advanced/{id}` `{"parameters": {"PRD <slot>": "VAL"}}`, after setup and at most hourly while one is missing; a slot that arrives later fills its entity in; the last known value is shown across restarts (`Restored: true`). Source of the request: the original library's first commit (ccc8f34, 2021, `{"PRD 222": "VAL"}` from the portal web app); `centrometal-local-mqtt` sends the same read to the module. The owner confirmed on 04.11.2026 that it works on the real boiler (with `hass-centrometal-boiler` 1.1.3, the same code). A value without `PMIN`/`PMAX` is shown but cannot be written.
 
 ## 10. Inclusion in the HACS default list
 
