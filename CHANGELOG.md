@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.1 — integration category
+
+- The manifest gives the integration's category, Climate → Thermostats & heating (`climate.thermostats_heating`), which Home Assistant now uses to group integrations. The HACS check had warned that it was missing. Nothing changes in Home Assistant.
+
 ## 1.0.0 — first release
 
 Home Assistant integration for Centrometal boilers connected to the Centrometal web portal (web-boiler.com), domain `centrometal_cloud`.
