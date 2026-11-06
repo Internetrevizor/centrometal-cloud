@@ -1,0 +1,17 @@
+{
+  "domain": "centrometal_cloud",
+  "name": "Centrometal Cloud",
+  "codeowners": [
+    "@Internetrevizor"
+  ],
+  "config_flow": true,
+  "dependencies": [],
+  "documentation": "https://github.com/Internetrevizor/centrometal-cloud",
+  "integration_type": "hub",
+  "iot_class": "cloud_push",
+  "issue_tracker": "https://github.com/Internetrevizor/centrometal-cloud/issues",
+  "requirements": [
+    "websockets>=13.1"
+  ],
+  "version": "1.0.0"
+}

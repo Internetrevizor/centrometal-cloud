@@ -1,0 +1,169 @@
+from typing import Any
+
+from homeassistant.core import HomeAssistant
+from homeassistant.components.switch import SwitchEntity
+from homeassistant.exceptions import HomeAssistantError
+
+from ..centrometal_web_boiler import HttpClientAuthError
+from ..common import create_device_info, format_name, format_time
+
+
+def _value_is_on(v: Any) -> bool | None:
+    """Decide ON/OFF from a parameter value, or None when unknown.
+
+    Returns None for unrecognised values so callers can fall back to a
+    secondary parameter rather than silently reporting the switch as ON,
+    which would flip it the wrong way for devices that use other values.
+    """
+    if v in (1, "1", "1.0", "ON", "On", "on", True, "TRUE", "True", "true"):
+        return True
+    if v in (0, "0", "0.0", "OFF", "Off", "off", False, "FALSE", "False", "false"):
+        return False
+    try:
+        intval = int(float(str(v).strip()))
+        if intval == 1:
+            return True
+        if intval == 0:
+            return False
+    except (ValueError, TypeError):
+        pass
+    return None
+
+
+class WebBoilerPowerSwitch(SwitchEntity):
+    def __init__(self, hass: HomeAssistant, device) -> None:
+        self.hass = hass
+        self.web_boiler_client = device["__client"]
+        self.web_boiler_system = device["__system"]
+        self._device = device
+        self._name = format_name(hass, device, f"{device['product']} Boiler Switch")
+        self._unique_id = device["serial"]
+        self._param_cmd = device.get_parameter("B_CMD")
+        self._param_state = device.get_parameter("B_STATE")
+
+    async def async_will_remove_from_hass(self) -> None:
+        try:
+            if self._param_cmd:
+                self._param_cmd.set_update_callback(None, "switch")
+        except Exception:
+            pass
+        try:
+            if self._param_state:
+                self._param_state.set_update_callback(None, "switch")
+        except Exception:
+            pass
+
+    async def async_added_to_hass(self):
+        self.async_schedule_update_ha_state(False)
+        if self._param_cmd:
+            self._param_cmd.set_update_callback(self.update_callback, "switch")
+        if self._param_state:
+            self._param_state.set_update_callback(self.update_callback, "switch")
+
+    @property
+    def should_poll(self) -> bool:
+        return False
+
+    async def update_callback(self, _device):
+        self.async_write_ha_state()
+
+    @property
+    def name(self) -> str:
+        return self._name
+
+    @property
+    def unique_id(self) -> str:
+        return self._unique_id
+
+    def _current_cmd_on(self) -> bool | None:
+        if not self._param_cmd:
+            return None
+        try:
+            return _value_is_on(self._param_cmd["value"])
+        except Exception:
+            return None
+
+    def _current_state_on(self) -> bool | None:
+        try:
+            return _value_is_on(self._param_state["value"])
+        except Exception:
+            return None
+
+    @property
+    def is_on(self) -> bool | None:
+        cmd_val = self._current_cmd_on()
+        if cmd_val is not None:
+            return cmd_val
+        return self._current_state_on()
+
+    @property
+    def icon(self) -> str:
+        # Reflects the command, not the flame: this is the boiler's on/off
+        # request, and "Flame State" is the entity that reports burning.
+        return "mdi:fire" if self.is_on else "mdi:fire-off"
+
+    @property
+    def available(self) -> bool:
+        return self.web_boiler_client.has_fresh_data()
+
+    def _compute_last_updated_str(self) -> str:
+        for param in (self._param_cmd, self._param_state):
+            if not param:
+                continue
+            try:
+                return format_time(self.hass, int(param["timestamp"]))
+            except Exception:
+                continue
+        return "?"
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        attrs: dict[str, Any] = {"Last updated": self._compute_last_updated_str()}
+        try:
+            attrs["Command Active (B_CMD)"] = self._param_cmd["value"] if self._param_cmd else "N/A"
+        except Exception:
+            attrs["Command Active (B_CMD)"] = "N/A"
+        try:
+            attrs["Boiler State (B_STATE)"] = self._param_state["value"] if self._param_state else "N/A"
+        except Exception:
+            attrs["Boiler State (B_STATE)"] = "N/A"
+        return attrs
+
+    async def _async_turn_and_refresh(self, power_on: bool) -> None:
+        # WebBoilerClient re-raises HttpClientAuthError on purpose. Left
+        # uncaught it reaches the frontend as an opaque "Unknown error" and the
+        # expired session is never rebuilt; here it turns into a clear message
+        # plus a silent relogin, so the next press works.
+        try:
+            accepted = await self.web_boiler_client.turn(self._device["serial"], power_on)
+        except HttpClientAuthError as err:
+            await self.web_boiler_system.async_recover_http_session()
+            raise HomeAssistantError(
+                "The Centrometal session had expired, so the boiler command was not sent. Please try again."
+            ) from err
+        if not accepted:
+            raise HomeAssistantError("Failed to send the boiler power command")
+        try:
+            refreshed = await self.web_boiler_client.refresh()
+        except HttpClientAuthError as err:
+            await self.web_boiler_system.async_recover_http_session()
+            raise HomeAssistantError(
+                "The boiler command was sent, but the Centrometal session expired before the state "
+                "could be refreshed"
+            ) from err
+        if not refreshed:
+            raise HomeAssistantError(
+                "The boiler command was sent, but the integration could not refresh the latest state"
+            )
+        # No notify_all_updated() here: refresh() already fires the per-parameter
+        # callbacks, so this only wrote every entity's state a second time.
+
+    async def async_turn_on(self, **kwargs) -> None:
+        await self._async_turn_and_refresh(True)
+
+    async def async_turn_off(self, **kwargs) -> None:
+        await self._async_turn_and_refresh(False)
+
+    @property
+    def device_info(self) -> dict[str, Any]:
+        return create_device_info(self._device)

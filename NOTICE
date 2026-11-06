@@ -1,0 +1,21 @@
+Centrometal Cloud for Home Assistant
+Copyright 2026 Internetrevizor
+
+Based on hass-centrometal-boiler
+(https://github.com/9a4gl/hass-centrometal-boiler),
+Portions Copyright 2022-2025 Tihomir Heidelberg and contributors,
+licensed under the Apache License, Version 2.0.
+
+It has been substantially rewritten and is maintained as an independent
+project. It is not affiliated with Centrometal d.o.o.
+
+Parts are adapted from AndroFlo/hass-centrometal-boiler
+(https://github.com/AndroFlo/hass-centrometal-boiler) and its client library,
+Copyright AndroFlo and contributors, licensed under the Apache License,
+Version 2.0:
+the BioTec-Plus pellet mode command and button, the BioTec-Plus tank level
+handling, and the approach of tests_ha/ (a fake Centrometal cloud).
+
+The write rules for settings (confirmation, no repeated value, rate limit)
+follow Internetrevizor/centrometal-local-mqtt
+(https://github.com/Internetrevizor/centrometal-local-mqtt).
