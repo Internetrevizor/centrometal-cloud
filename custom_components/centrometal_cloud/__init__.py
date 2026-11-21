@@ -270,6 +270,10 @@ class WebBoilerSystem:
             # Tolerance: keep using the existing reconnect loop for up to 3x
             # the *base* relogin retry interval (not the backed-off value, so
             # this window doesn't grow along with the backoff).
+            if websocket_running and self.web_boiler_client.is_websocket_refused():
+                # The portal refuses the subscription for this account: a relogin would only start one more refused
+                # session. The websocket client tries again on its own, once an hour.
+                return
             if websocket_running and disconnected_for < (self.retry_base_interval * 3):
                 _LOGGER.debug(
                     "Centrometal websocket disconnected for %.0fs but reconnect loop is active (%s)",

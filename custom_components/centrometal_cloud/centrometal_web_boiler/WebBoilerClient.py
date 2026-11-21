@@ -9,7 +9,7 @@ from typing import Any
 from .HttpClient import HttpClient, HttpClientAuthError, HttpClientConnectionError, SSLContextFactory
 from .HttpHelper import HttpHelper
 from .WebBoilerDeviceCollection import WebBoilerDeviceCollection
-from .WebBoilerWsClient import WebBoilerWsClient
+from .WebBoilerWsClient import WebBoilerWsClient, is_access_refused
 from .logging_utils import redact_account
 
 
@@ -58,6 +58,7 @@ class WebBoilerClient:
         self.hass = hass
         self.logger = logging.getLogger(__name__)
         self.websocket_connected = False
+        self._ws_errors_in_a_row = 0
         self._ssl_context_factory = ssl_context_factory
         # Default window for has_fresh_data(); the Home Assistant layer
         # raises it to match a longer configured refresh interval.
@@ -336,9 +337,26 @@ class WebBoilerClient:
         )
 
     async def ws_error_callback(self, ws, err):
-        self.logger.error("WebBoilerClient - error err:%s (%s)", err, self.log_account)
+        # A broker that keeps refusing would otherwise fill the log: the first error of a streak is a warning, the
+        # repeats are debug. A session that carries data ends the streak.
+        self._ws_errors_in_a_row += 1
+        level = logging.WARNING if self._ws_errors_in_a_row == 1 else logging.DEBUG
+        if is_access_refused(err):
+            self.logger.log(
+                level,
+                "WebBoilerClient - the portal refused the realtime subscription (ACCESS_REFUSED); values keep "
+                "arriving by HTTP polling, and the subscription is tried again every hour (%s)",
+                self.log_account,
+            )
+            return
+        self.logger.log(level, "WebBoilerClient - error err:%s (%s)", err, self.log_account)
+
+    def is_websocket_refused(self) -> bool:
+        """True while the portal refuses the realtime subscription: relogins cannot change that."""
+        return self.ws_client.subscription_refused
 
     async def ws_data_callback(self, ws, stomp_frame):
+        self._ws_errors_in_a_row = 0
         self.last_websocket_message = time.monotonic()
         await self.data.parse_real_time_frame(stomp_frame)
 

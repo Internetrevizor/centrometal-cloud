@@ -30,6 +30,7 @@ class _StubClient:
         self._refresh_ok = refresh_ok
         self.connected = False
         self.running = False
+        self.refused = False
         self.refresh_calls = 0
         self.start_websocket_calls = 0
         self.relogin_calls = 0
@@ -43,6 +44,9 @@ class _StubClient:
 
     def is_websocket_running(self) -> bool:
         return self.running
+
+    def is_websocket_refused(self) -> bool:
+        return self.refused
 
     def websocket_disconnected_for(self) -> float:
         return 0.0 if self.connected else 3600.0
@@ -164,6 +168,27 @@ def test_tick_does_not_relogin_twice_for_one_failed_refresh_while_disconnected()
         client.running = False
         system.last_refresh_timestamp = time.monotonic() - (system.refresh_interval + 60)
         system.last_relogin_timestamp = time.monotonic()
+
+        await system.tick()
+
+        assert client.refresh_calls == 1
+        assert client.relogin_calls == 0
+
+    asyncio.run(runner())
+
+
+def test_tick_does_not_relogin_while_the_portal_refuses_the_subscription() -> None:
+    """A refused subscription is a permission of the portal: a relogin would only start one more refused session
+    (issue #1). HTTP polling goes on, and the websocket client retries on its own."""
+
+    async def runner() -> None:
+        client = _StubClient()
+        system = _make_system(client)
+        client.connected = False
+        client.running = True
+        client.refused = True
+        system.last_refresh_timestamp = time.monotonic() - (system.refresh_interval + 60)
+        system.last_relogin_timestamp = 0.0
 
         await system.tick()
 

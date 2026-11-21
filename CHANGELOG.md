@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.0.2 — no reconnect loop when the portal refuses the realtime subscription
+
+Fixes [#1](https://github.com/Internetrevizor/centrometal-cloud/issues/1). For some accounts the portal accepts the realtime (STOMP) login, then refuses the subscription to the boiler with `ACCESS_REFUSED - read access to exchange 'amq.topic'` and closes the connection. The reconnect loop started the next connection at once, about twice a second: each one logged an error (67,182 in nine hours in the report) and wrote the state of every entity twice. Values kept arriving by HTTP polling.
+
+- A refused subscription is logged once, as a warning that values keep arriving by HTTP polling, and tried again once an hour. No relogin is started for it.
+- Any realtime connection that ends before carrying data, or with an ERROR frame from the portal, is followed by a pause before the next one: 5 seconds, doubling up to 5 minutes. A connection that carries data resets the pause.
+- Repeated realtime errors are one warning; the repeats are logged at debug level until data arrives again.
+
 ## 1.0.1 — integration category
 
 - The manifest gives the integration's category, Climate → Thermostats & heating (`climate.thermostats_heating`), which Home Assistant now uses to group integrations. The HACS check had warned that it was missing. Nothing changes in Home Assistant.

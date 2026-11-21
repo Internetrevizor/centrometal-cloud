@@ -7,6 +7,7 @@ from websockets.asyncio.client import connect
 from websockets.exceptions import ConnectionClosed
 
 from . import stomp
+from .backoff import next_retry_delay
 from .logging_utils import redact_account
 from .HttpClient import SSLContextFactory, build_verified_ssl_context
 from .const import (
@@ -15,6 +16,24 @@ from .const import (
     WEB_BOILER_STOMP_LOGIN_USERNAME,
     WEB_BOILER_STOMP_URL,
 )
+
+
+# A session that ends before it carried any data, or that the broker ended with an ERROR frame, is followed by a pause
+# before the next one. Without it the reconnect loop of `websockets` starts the next session at once: a broker that
+# accepts the login and then refuses the subscription made about two sessions a second, each one an error in the log
+# and a state write of every entity (issue #1: 67,182 errors in nine hours).
+RECONNECT_BASE_SECONDS = 5
+RECONNECT_MAX_SECONDS = 300
+# The broker refused the subscription itself: that is a permission of the portal, not a network fault, and retrying
+# sooner will not change it. Data keeps arriving over HTTP polling in the meantime.
+REFUSED_RETRY_SECONDS = 3600
+
+
+def is_access_refused(frame) -> bool:
+    if not isinstance(frame, dict):
+        return False
+    text = f"{frame.get('headers', {}).get('message', '')} {frame.get('body', '')}".lower()
+    return "access_refused" in text
 
 
 class WebBoilerWsClient:
@@ -43,6 +62,10 @@ class WebBoilerWsClient:
         self._stop_event = asyncio.Event()
         self._connected_event = asyncio.Event()
         self._heartbeat_task: asyncio.Task | None = None
+        self._failed_sessions = 0
+        self._session_carried_data = False
+        self._session_refused = False
+        self.subscription_refused = False
 
     async def _create_ssl_context(self):
         # Same rule as the HTTP client: never build (or even look up) an SSL
@@ -84,6 +107,8 @@ class WebBoilerWsClient:
         # Without this reset they grew unbounded across reconnects within a
         # single ``start()`` call.
         self.subscription_index = 0
+        self._session_carried_data = False
+        self._session_refused = False
         self._heartbeat_task = asyncio.create_task(self._heartbeat_loop(ws))
         try:
             await ws.send(
@@ -104,12 +129,19 @@ class WebBoilerWsClient:
                         if frame["cmd"] == "HEARTBEAT":
                             continue
                         if frame["cmd"] == "ERROR":
+                            # The broker closes the session after an ERROR frame (STOMP 1.1); this side ends it too,
+                            # so the pause before the next session starts now.
+                            self._session_refused = is_access_refused(frame)
                             await self.error_callback(ws, frame)
-                            continue
+                            await ws.close()
+                            return
                         if frame["cmd"] == "CONNECTED":
                             self._connected_event.set()
                             await self.connected_callback(ws, frame)
                             continue
+                        self._session_carried_data = True
+                        self.subscription_refused = False
+                        self._failed_sessions = 0
                         await self.data_callback(ws, frame)
                     except asyncio.CancelledError:
                         raise
@@ -177,6 +209,8 @@ class WebBoilerWsClient:
                         if close_reason is None:
                             close_reason = getattr(ws, "close_reason", None)
                         await self.disconnected_callback(ws, close_code, close_reason)
+                    if await self._pause_after_session():
+                        break
                 break
             except asyncio.CancelledError:
                 raise
@@ -184,6 +218,30 @@ class WebBoilerWsClient:
                 self.logger.exception("WebBoilerWsClient connect loop failed (%s)", self.log_account)
                 await self.error_callback(None, err)
                 break
+
+    def next_session_delay(self) -> float:
+        """Seconds to wait before the next session; 0 after a session that carried data."""
+        if self._session_carried_data:
+            return 0
+        if self._session_refused:
+            return REFUSED_RETRY_SECONDS
+        return next_retry_delay(self._failed_sessions, base=RECONNECT_BASE_SECONDS, cap=RECONNECT_MAX_SECONDS)
+
+    async def _pause_after_session(self) -> bool:
+        """Wait before the next session as `next_session_delay` says; True when a stop was requested meanwhile."""
+        if self._session_refused:
+            self.subscription_refused = True
+        delay = self.next_session_delay()
+        if not self._session_carried_data:
+            self._failed_sessions = min(self._failed_sessions + 1, 32)
+        if delay <= 0:
+            return self._stop_event.is_set()
+        self.logger.debug("WebBoilerWsClient next session in %.0f s (%s)", delay, self.log_account)
+        try:
+            await asyncio.wait_for(self._stop_event.wait(), timeout=delay)
+        except TimeoutError:
+            return False
+        return True
 
     def is_running(self) -> bool:
         """Return True when the websocket background task is active."""
