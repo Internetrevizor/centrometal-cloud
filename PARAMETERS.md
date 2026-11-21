@@ -70,7 +70,7 @@ Editable controller settings (`PVAL_*` rows the account may change) are `number`
 
 ## Other families
 
-Older PelTec, Compact, CM Pelet-set, BioTec and BioTec Plus keep the mappings inherited from the original project (untested by the maintainer). A BioTec-Plus additionally gets:
+Older PelTec, Compact, CM Pelet-set, BioTec and BioTec Plus keep the mappings inherited from the original project (untested by the maintainer). On every `biotec` boiler a temperature of -55 or lower is unknown: the portal sends -55 for a sensor the controller does not read. A BioTec-L also gets its Boiler State and named codes, see [Boiler State (BioTec-L)](#boiler-state-biotec-l). A BioTec-Plus additionally gets:
 
 | Parameter | Home Assistant entity | Rule |
 |---|---|---|
@@ -128,6 +128,64 @@ Where P1 is the K1 circuit's own pump, `K1B_P` already reports the same pump, so
 | `PF3` | PF3: Power failure — waiting for flame to disappear |
 | `PF4` | PF4: Power failure — final fan blowing |
 | `C0` | C0: Grate cleaning |
+
+## Boiler State (BioTec-L)
+
+A BioTec-L has its own operation phases, from "5.0. Operation phases" in "Technical instructions REGULATION BioTec-L" (pages 60–62). Other `biotec` products keep the disabled raw `B_STATE` sensor.
+
+| Code | State text |
+|---|---|
+| `OFF` | OFF: Switched off |
+| `S0` | S0: Ignition 1/3, fan at maximum speed |
+| `S1` | S1: Ignition 2/3, waiting for flue gas above 50 °C |
+| `SP1` | SP1: Setting the primary and secondary air |
+| `SP2` | SP2: Stabilisation |
+| `SD4` | SD4: Setting the air for power D4 |
+| `D4`…`D1` | D4: Power D4 … D1: Power D1 |
+| `DOP0` | DOP0: Upper door open |
+| `DIF1` | DIF1: Turning off (set temperature, low firebox or high flue gas temperature) |
+| `DIF2` | DIF2: Waiting for the boiler to cool by the differential |
+| `DIF3` | DIF3: Blowout while waiting for the boiler to cool |
+| `DIF4` | DIF4: Restarting, setting the primary and secondary air |
+| `GLW1` | GLW1: Shutting down to keep the glow |
+| `GLW2` | GLW2: Keeping the glow |
+| `GLW3` | GLW3: Glow blowout |
+| `GLW4` | GLW4: New filling, setting the primary and secondary air |
+| `OFF1` | OFF1: Shutting down, then OFF |
+| `PF-ON` | PF-ON: Power failure — air zeroed, restarting automatically |
+| `PF-<phase>` | the phase after a power failure, e.g. `PF-GLW2: Power failure — Keeping the glow` |
+
+`Stage group` is `off`, `ignition_startup`, `modulation` (with `Power level` 1–4), `door_open`, `differential`, `glow`, `shutdown` or `power_failure_recovery`.
+
+BioTec-L codes (pages 64–72), the names of their disabled diagnostic sensors:
+
+| Code | Name | Code | Name |
+|---|---|---|---|
+| `E1` | DHW sensor | `W1` | Factory settings loaded |
+| `E2` | Buffer tank sensor (upper) | `W2` | Flue gas temperature high, close the upper door |
+| `E3` | Buffer tank sensor (lower) | `W3` | Fan protection |
+| `E4` | Flue gas sensor | `W4` | Intervention work (firebox sensor) |
+| `E5` | Outside temperature sensor | `W5` | Intervention work (lambda probe) |
+| `E6` | Main flow sensor | `W6` | Intervention work (flue gas sensor) |
+| `E7` | Return flow sensor | `W7` | Intervention work (RPM sensor) |
+| `E8` | Boiler sensor | `W8` | Ignition error, try again |
+| `E9` | Unknown boiler power | `W9` | Fan off, flue gas temperature too high, close the upper door |
+| `E10` | Fan error | `W10` | Low return temperature |
+| `E12` | Communication error with motherboard | `W11` | Out of fuel |
+| `E13` | Communication error with sensor board | `W12` | Low buffer temperature |
+| `E14` | Lambda probe error | `I1` | OFF during ignition |
+| `E16` | Communication error with CM2K (1+ and 2+) | `I2` | Ignition automatically proceeded |
+| `E17` | CM2K 1+ circuit sensor | `I3` | Bad ignition |
+| `E18` | CM2K 1+ circuit corrector | `I4` | OFF during stabilisation |
+| `E19` | CM2K 2+ circuit sensor | `I5` | Power up after a power failure |
+| `E20` | CM2K 2+ circuit corrector | `I6` | Glow after power up |
+| `E21` | Firebox sensor | `I7` | OFF after power up |
+| `E24` | Room corrector error | | |
+| `E26` | Firebox sensor disconnected | | |
+| `E27` | Hydraulic crossover sensor error | | |
+| `E29` | Communication error with WiFi | | |
+
+W12: the buffer tank is below the temperature that lets the pumps run. That is the "Minimum buffer tank temperature" setting (page 22: factory 20 °C, 5–64 °C, the default and limits the portal reports for slot 15); below it the controller stops the pumps and modules behind the tank, but not the DHW pump.
 
 ## Boiler schedule
 

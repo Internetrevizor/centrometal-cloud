@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.2.0 — BioTec-L: Boiler State, codes and missing sensors
+
+From the controller manual "Technical instructions REGULATION BioTec-L" and the diagnostics of a BioTec-L (v2.47aL) in [#1](https://github.com/Internetrevizor/centrometal-cloud/issues/1).
+
+- **New on a BioTec-L: Boiler State**, with the BioTec-L operation phases (pages 60–62): `OFF: Switched off`, `S1: Ignition 2/3, waiting for flue gas above 50 °C`, `GLW2: Keeping the glow` and the rest, listed in PARAMETERS.md. Until now the phase was a disabled, hidden sensor named "B_STATE"; that entry is enabled and becomes `sensor.<device>_boiler_state`. If you had enabled it yourself, it keeps its entity ID. Home Assistant reloads the integration once, about 30 seconds after the first start, as it does whenever an entity is enabled.
+- **Every BioTec (`biotec`): -55 °C is unknown.** The portal sends -55 for a sensor the controller does not read, where the controller's own screen shows "-". The diagnostics showed it for the mixer and DHW temperatures.
+- **BioTec-L codes are named after the manual** (pages 64–72): the disabled diagnostic sensors "W11" and "W12" are now "W11 Out of fuel" and "W12 Low buffer temperature", and the same for every E, W and I code. They stay disabled: what their value says has not been seen yet.
+- PelTec II and every other family: nothing changes. No other entity, entity ID, name or state text changes.
+
 ## 1.1.0 — the boiler schedule as a calendar
 
 - **New: Boiler Schedule calendar (PelTec II, read-only).** The controller's three weekly tables of boiler operating times and the "Boiler schedule" selector are read the way the portal reads them, `{"PRD 223": "VAL", "PRD 224": "ALV"}` and the same for 225 and 226, after setup and then every six hours. The calendar's events are the windows of the active table, in Home Assistant's time zone; with the selector on Off it has none. Its attributes give the active table and each table day by day ("04:00-08:00, 17:30-23:00"). The layout comes from the controller manual (pages 30–31) and was checked against a PelTec II Lambda read through the portal: ten values a day (T1–T5 starts and stops), minutes after midnight, bit 15 on a start, 1440 for an unused value.

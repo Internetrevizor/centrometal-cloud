@@ -85,6 +85,26 @@ BIOTEC_PLUS = boiler(
     {"B_STATE": "ON", "B_pbs": "0", "B_Tk1": "65"},
 )
 
+# A BioTec-L as its diagnostics showed it: off, no mixer or DHW sensor read (-55), warnings W11 and W12 reported.
+BIOTEC_L = boiler(
+    5151,
+    "BTLSERIAL",
+    "biotec",
+    "BioTec-L",
+    {
+        "B_STATE": "OFF",
+        "B_KONF": "15",
+        "B_VER": "v2.47aL",
+        "B_PRODNAME": "BioTec-L",
+        "B_Tk1": "13.7",
+        "B_Tak1_1": "40",
+        "B_Tpov1": "-55",
+        "B_Tptv1": "-55",
+        "W11": "A",
+        "W12": "A",
+    },
+)
+
 
 class FakeWebsite:
     """aiohttp application recording the commands it receives."""

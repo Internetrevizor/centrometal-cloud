@@ -3,6 +3,8 @@ import logging
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
 
+from .biotec_l import is_biotec_l
+from .const import DOMAIN
 from .sensors.WebBoilerBinaryOnOffSensor import create_binary_state_entities
 from .sensors.WebBoilerConfigurationSensor import WebBoilerConfigurationSensor
 from .sensors.WebBoilerDeviceTypeSensor import WebBoilerDeviceTypeSensor
@@ -42,7 +44,7 @@ async def async_setup_entry(hass: HomeAssistant, config_entry, async_add_entitie
         if device.get("type") in {"peltec", "peltec2", "compact"}:
             all_entities.extend(WebBoilerFireGridSensor.create_entities(hass, device))
 
-        if device.get("type") == "peltec2":
+        if device.get("type") == "peltec2" or is_biotec_l(device):
             all_entities.extend(WebBoilerOperationStateSensor.create_entities(hass, device))
 
         all_entities.extend(WebBoilerGenericSensor.create_conf_entities(hass, device))
@@ -69,6 +71,7 @@ async def async_setup_entry(hass: HomeAssistant, config_entry, async_add_entitie
             )
 
     _async_remove_obsolete_sensors(hass, config_entry, devices, deduped_entities)
+    _async_show_biotec_l_boiler_state(hass, devices)
 
     async_add_entities(deduped_entities, True)
 
@@ -109,6 +112,37 @@ def _async_remove_obsolete_sensors(hass: HomeAssistant, config_entry, devices, e
             registry_entry.unique_id,
         )
         registry.async_remove(registry_entry.entity_id)
+
+
+def _async_show_biotec_l_boiler_state(hass: HomeAssistant, devices) -> None:
+    """Bring the BioTec-L Boiler State out of the hidden, disabled entity it was before 1.2.0.
+
+    Up to 1.1.0 the stage of a BioTec-L was an unclaimed parameter: a disabled, hidden sensor named "B_STATE",
+    with the same unique ID the Boiler State sensor has now. Home Assistant keeps those flags in its registry (and
+    restores them if the entry is deleted), so the new sensor would stay disabled. Flags the integration set are
+    cleared; a flag the user set is left alone. An entry still disabled by the integration has never been used, so
+    it also takes the entity ID a new install gets ("..._boiler_state" instead of "..._b_state"). Home Assistant
+    reloads the integration once, about 30 seconds later, as it does whenever an entity is enabled.
+    """
+    registry = er.async_get(hass)
+    for device in devices:
+        if not is_biotec_l(device):
+            continue
+        entity_id = registry.async_get_entity_id("sensor", DOMAIN, f"{device['serial']}-B_STATE")
+        entry = registry.async_get(entity_id) if entity_id else None
+        if entry is None:
+            continue
+        changes: dict = {}
+        if entry.hidden_by == er.RegistryEntryHider.INTEGRATION:
+            changes["hidden_by"] = None
+        if entry.disabled_by == er.RegistryEntryDisabler.INTEGRATION:
+            changes["disabled_by"] = None
+            if entity_id.endswith("_b_state"):
+                renamed = f"{entity_id[: -len('_b_state')]}_boiler_state"
+                if registry.async_get(renamed) is None:
+                    changes["new_entity_id"] = renamed
+        if changes:
+            registry.async_update_entity(entity_id, **changes)
 
 
 # A complete controller snapshot always carries the controller's own identity

@@ -7,6 +7,7 @@ from homeassistant.components.sensor import SensorEntity, SensorDeviceClass, Sen
 from homeassistant.const import UnitOfPower, UnitOfTime, PERCENTAGE
 from homeassistant.core import HomeAssistant
 
+from .. import biotec_l
 from ..common import create_device_info, display_value, format_name, format_time
 
 from .generic_sensors_all import GENERIC_SENSORS_COMMON, get_generic_temperature_settings_sensors
@@ -295,6 +296,9 @@ class WebBoilerGenericSensor(SensorEntity):
             return valid_temperature(self._param_name, value)
         if self.device.get("type") == "peltec2" and self._param_name == "B_Oxy1":
             return valid_lambda(value)
+        if self.device.get("type") == "biotec" and self._device_class == SensorDeviceClass.TEMPERATURE:
+            # -55 is a sensor the controller does not read; its screen shows "-" there. A valid value is kept as sent.
+            return value if biotec_l.valid_temperature(value) is not None else None
         if self.device.get("type") == "peltec2" and self._param_name == "B_signal":
             return valid_signal_db(value)
         if self.device.get("type") == "peltec2" and self._param_name in {"B_razP", "B_misP"}:
@@ -679,11 +683,14 @@ class WebBoilerGenericSensor(SensorEntity):
             if param_name in WebBoilerGenericSensor._SKIP_UNKNOWN:
                 continue
             _LOGGER.debug("create_unknown_entities: exposing unclaimed parameter %s", param_name)
+            # A BioTec-L error, warning or information code is named after the manual ("W11 Out of fuel"). What its
+            # value says is not known yet, so it stays hidden like every other unclaimed parameter.
+            name = (biotec_l.code_name(param_name) if biotec_l.is_biotec_l(device) else None) or param_name
             entities.append(
                 WebBoilerGenericSensor(
                     hass,
                     device,
-                    [None, "mdi:help-circle-outline", None, param_name],
+                    [None, "mdi:help-circle-outline", None, name],
                     parameter,
                     disabled_by_default=True,
                 )

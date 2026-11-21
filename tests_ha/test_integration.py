@@ -13,7 +13,7 @@ from homeassistant.helpers import entity_registry as er
 from pytest_homeassistant_custom_component.common import MockConfigEntry, mock_restore_cache_with_extra_data
 
 from .conftest import DOMAIN
-from .fake_centrometal import BIOTEC_PLUS, EMAIL, PASSWORD, PELTEC2, wait_until
+from .fake_centrometal import BIOTEC_L, BIOTEC_PLUS, EMAIL, PASSWORD, PELTEC2, wait_until
 
 
 async def _setup(hass, entry) -> None:
@@ -232,6 +232,64 @@ async def test_pellet_mode_button_sends_the_command(hass, entry, website):
 
     await hass.services.async_call("button", "press", {"entity_id": entity_id}, blocking=True)
     assert {"cmd-name": "SCCMD", "cmd-value": 1} in website.commands_to(4242)
+
+
+# BioTec-L
+
+
+@pytest.mark.parametrize("boilers", [[BIOTEC_L]])
+async def test_biotec_l_boiler_state_and_missing_sensors(hass, entry, broker):
+    await _setup(hass, entry)
+    state_id = _entity_id(hass, "sensor", "BTLSERIAL-B_STATE")
+    assert state_id == "sensor.biotec_l_boiler_state"
+    assert hass.states.get(state_id).state == "OFF: Switched off"
+    assert hass.states.get(_entity_id(hass, "sensor", "BTLSERIAL-B_Tptv1")).state == "unknown"
+    assert float(hass.states.get(_entity_id(hass, "sensor", "BTLSERIAL-B_Tk1")).state) == 13.7
+    warning = er.async_get(hass).async_get(_entity_id(hass, "sensor", "BTLSERIAL-W11"))
+    assert warning.disabled_by is er.RegistryEntryDisabler.INTEGRATION
+    assert warning.original_name == "W11 Out of fuel"
+
+    await broker.publish("biotec", "BTLSERIAL", {"B_STATE": "GLW2"})
+    await wait_until(lambda: hass.states.get(state_id).state == "GLW2: Keeping the glow")
+
+
+@pytest.mark.parametrize("boilers", [[BIOTEC_L]])
+async def test_biotec_l_boiler_state_comes_out_of_the_old_hidden_entity(hass, entry):
+    """Up to 1.1.0 the stage was a disabled, hidden "B_STATE" sensor with the same unique ID."""
+    registry = er.async_get(hass)
+    registry.async_get_or_create(
+        "sensor",
+        DOMAIN,
+        "BTLSERIAL-B_STATE",
+        config_entry=entry,
+        suggested_object_id="biotec_l_b_state",
+        disabled_by=er.RegistryEntryDisabler.INTEGRATION,
+        hidden_by=er.RegistryEntryHider.INTEGRATION,
+    )
+    await _setup(hass, entry)
+    entity_id = _entity_id(hass, "sensor", "BTLSERIAL-B_STATE")
+    assert entity_id == "sensor.biotec_l_boiler_state"
+    assert registry.async_get(entity_id).disabled_by is None
+    assert registry.async_get(entity_id).hidden_by is None
+    assert hass.states.get(entity_id).state == "OFF: Switched off"
+
+
+@pytest.mark.parametrize("boilers", [[BIOTEC_L]])
+async def test_biotec_l_boiler_state_the_user_enabled_keeps_its_entity_id(hass, entry):
+    registry = er.async_get(hass)
+    registry.async_get_or_create(
+        "sensor",
+        DOMAIN,
+        "BTLSERIAL-B_STATE",
+        config_entry=entry,
+        suggested_object_id="biotec_l_b_state",
+        hidden_by=er.RegistryEntryHider.INTEGRATION,
+    )
+    await _setup(hass, entry)
+    entity_id = _entity_id(hass, "sensor", "BTLSERIAL-B_STATE")
+    assert entity_id == "sensor.biotec_l_b_state"
+    assert registry.async_get(entity_id).hidden_by is None
+    assert hass.states.get(entity_id).state == "OFF: Switched off"
 
 
 # Names

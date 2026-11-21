@@ -1,6 +1,7 @@
 from homeassistant.components.sensor import SensorEntity
 from homeassistant.core import HomeAssistant
 
+from .. import biotec_l
 from .WebBoilerGenericSensor import WebBoilerGenericSensor
 
 # Stage texts follow the table "Operation stages (shown on the screen)" in
@@ -85,6 +86,8 @@ class WebBoilerOperationStateSensor(WebBoilerGenericSensor):
         if raw is None:
             return "Unknown"
         key = str(raw).strip()
+        if biotec_l.is_biotec_l(self.device):
+            return biotec_l.stage_text(key)
         return _B_STATE_MAP.get(key, f"Unknown ({key})")
 
     @property
@@ -93,7 +96,7 @@ class WebBoilerOperationStateSensor(WebBoilerGenericSensor):
         attrs = dict(base)
         raw = self.parameter.get("value")
         code = "" if raw is None else str(raw).strip()
-        details = _stage_details(code)
+        details = biotec_l.stage_details(code) if biotec_l.is_biotec_l(self.device) else _stage_details(code)
         attrs["Raw stage code"] = raw
         attrs["Stage group"] = details["stage_group"]
         attrs["Description"] = details["description"]

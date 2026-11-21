@@ -1,6 +1,6 @@
 # Centrometal Cloud for Home Assistant
 
-![Version](https://img.shields.io/badge/version-1.1.0-blue.svg)
+![Version](https://img.shields.io/badge/version-1.2.0-blue.svg)
 ![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2024.11%2B-blue.svg)
 ![License](https://img.shields.io/badge/license-Apache%202.0-green.svg)
 
@@ -53,6 +53,14 @@ Exposed PelTec II data includes:
 The Lambda Probe entity is created even when the controller omits the reading while the boiler is not firing. Any finite numeric value supplied by the controller, including idle values such as `25.5`, is displayed; a later live combustion value updates normally without reloading the integration. The Wi-Fi signal entity follows the controller display: nonzero values are shown in dB, while portal value `0` represents the unavailable `---dB` state and recovers automatically when RSSI is reported.
 
 The other families use the mappings of the original project; see [Supported boilers](#supported-boilers).
+
+## BioTec-L
+
+From the controller manual ("Technical instructions REGULATION BioTec-L"), checked against the diagnostics of a BioTec-L (v2.47aL):
+
+- **Boiler State** with the BioTec-L operation phases (pages 60–62), which are not the PelTec II stages: see [PARAMETERS.md](PARAMETERS.md#boiler-state-biotec-l).
+- A temperature of **-55** is shown as unknown: the portal sends it for a sensor the controller does not read, and the controller's own screen shows "-" there.
+- The error, warning and information codes the boiler reports (`W11`, `W12`, …) are named after the manual ("W11 Out of fuel"). They stay disabled diagnostic sensors until it is known what their value says.
 
 ## BioTec-Plus
 
