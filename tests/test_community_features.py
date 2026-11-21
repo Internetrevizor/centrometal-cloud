@@ -27,7 +27,7 @@ from custom_components.centrometal_cloud.centrometal_web_boiler.HttpClient impor
 from custom_components.centrometal_cloud.centrometal_web_boiler.WebBoilerDeviceCollection import (  # noqa: E402
     WebBoilerDevice,
 )
-from custom_components.centrometal_cloud.common import format_name  # noqa: E402
+from custom_components.centrometal_cloud.common import device_name, format_name  # noqa: E402
 from custom_components.centrometal_cloud.sensors.WebBoilerGenericSensor import (  # noqa: E402
     WebBoilerGenericSensor,
 )
@@ -93,8 +93,8 @@ def _conf_entities(device) -> dict:
 
 def test_biotec_plus_tank_and_fuel_level_exist_before_the_first_value() -> None:
     created = _conf_entities(_device("biopl", "BioTec-Plus"))
-    assert created["B_razina"].name == "BioTec-Plus Tank Level"
-    assert created["B_razP"].name == "BioTec-Plus Fuel Level"
+    assert created["B_razina"].name == "Tank Level"
+    assert created["B_razP"].name == "Fuel Level"
     # No value yet: unavailable, not a made-up reading.
     assert created["B_razina"].available is False
     assert created["B_razP"].available is False
@@ -130,43 +130,27 @@ def test_other_families_get_no_placeholder_tank_parameters() -> None:
     assert not device.has_parameter("B_razP")
 
 
-# Product name prefix option
+# Names: the device carries the product (and the user prefix, and the serial with several boilers); each entity
+# carries only its own part. Home Assistant 2026.10+ puts the device name in front of every entity name.
 
 
-def test_product_prefix_is_kept_by_default() -> None:
-    device = _device("peltec2", "PelTec II Lambda")
-    assert format_name(_FAKE_HASS, device, "PelTec II Lambda Boiler Temperature") == "PelTec II Lambda Boiler Temperature"
+def test_the_device_is_named_after_the_product() -> None:
+    assert device_name(_device("peltec2", "PelTec II Lambda")) == "PelTec II Lambda"
+    assert device_name(_device("biopl", "GMX EASY")) == "biotec"
 
 
-def test_product_prefix_can_be_switched_off() -> None:
-    device = _device("peltec2", "PelTec II Lambda", __product_prefix=False)
+def test_the_device_name_keeps_the_user_prefix_and_the_serial() -> None:
+    device = _device("peltec2", "PelTec II Lambda", __prefix="Home ", __multi_device=True)
+    assert device_name(device) == "Home ABC123 PelTec II Lambda"
+
+
+def test_the_entity_keeps_only_its_own_part() -> None:
+    device = _device("peltec2", "PelTec II Lambda", {"B_Tk1": "60"})
     assert format_name(_FAKE_HASS, device, "PelTec II Lambda Boiler Temperature") == "Boiler Temperature"
-    # Names that never carried the product are left alone.
-    assert format_name(_FAKE_HASS, device, "Centrometal Boiler System connection") == (
-        "Centrometal Boiler System connection"
-    )
-
-
-def test_product_prefix_off_keeps_the_user_prefix_and_the_serial() -> None:
-    device = _device("peltec2", "PelTec II Lambda", __product_prefix=False, __prefix="Home ", __multi_device=True)
-    assert format_name(_FAKE_HASS, device, "PelTec II Lambda Boiler Temperature") == "Home ABC123 Boiler Temperature"
-
-
-def test_product_prefix_option_reaches_generic_entities() -> None:
-    device = _device("peltec2", "PelTec II Lambda", {"B_Tk1": "60"}, __product_prefix=False)
+    assert format_name(_FAKE_HASS, device, "System Connection") == "System Connection"
     created = _conf_entities(device)
     assert created["B_Tk1"].name == "Boiler Temperature"
-
-
-def test_the_product_prefix_comes_from_the_options() -> None:
-    from custom_components.centrometal_cloud import WebBoilerSystem
-
-    def system(options):
-        entry = SimpleNamespace(options=options, data={})
-        return WebBoilerSystem(None, entry=entry, username="user@example.com", password="x", prefix="")
-
-    assert system({}).product_prefix is True
-    assert system({"product_prefix": False}).product_prefix is False
+    assert created["B_Tk1"].has_entity_name is True
 
 
 # BioTec-Plus Pellet Mode button
@@ -201,7 +185,7 @@ def test_pellet_mode_button_only_for_biotec_plus() -> None:
     buttons = _buttons(biopl, peltec2)
     assert len(buttons) == 1
     assert buttons[0].unique_id == "ABC123_button_pellet_mode"
-    assert buttons[0].name == "BioTec-Plus Pellet Mode"
+    assert buttons[0].name == "Pellet Mode"
 
 
 def test_pellet_mode_press_sends_the_command_and_reads_back() -> None:

@@ -59,6 +59,7 @@ def _is_number(value: Any) -> bool:
 
 
 class WebBoilerGenericSensor(SensorEntity):
+    _attr_has_entity_name = True
     def __init__(self, hass: HomeAssistant, device, sensor_data, parameter, disabled_by_default: bool = False) -> None:
         self.hass = hass
         self.web_boiler_client = device["__client"]

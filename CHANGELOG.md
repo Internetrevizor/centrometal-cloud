@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.0.5 — entity names for Home Assistant 2026.10 and later
+
+- Home Assistant 2026.10 puts the device name in front of the name of every entity that does not name itself after its device. Every entity carried the product in its own name and the device was "Centrometal Boiler <product> <power> <serial>", so a new install got names such as "Centrometal Boiler PelTec II Lambda 36 SN000001 PelTec II Lambda Boiler Temperature" and entity IDs to match. Every entity now names itself after its device (`has_entity_name`): the device is named after the product ("PelTec II Lambda", after the optional prefix and, with several boilers, the serial), and each entity keeps only its own part ("Boiler Temperature"). A new install gets the entity IDs it got before 2026.10 (`sensor.peltec_ii_lambda_boiler_temperature`).
+- Existing installs keep their entity IDs, so automations keep working. The device name and the displayed entity names change to the form above.
+- The option **Prefix entity names with the product name** is removed: Home Assistant 2026.10 and later ignored it, and renaming the device does the same.
+- The connection sensor is named "System Connection" ("PelTec II Lambda System Connection").
+- The Home Assistant tests run on both an older and a current Home Assistant release.
+
 ## 1.0.4 — PelTec Compact on/off, and no rejected values on numeric sensors
 
 - **PelTec Compact:** the boiler on/off switch is created, as on the PelTec, whose controller the Compact shares. Its boiler command value was already left out of the sensors in favour of that switch, so neither existed. The hydraulic configuration shows the scheme name ("4. BUF") instead of its index, and the burner grate sensor is created when the boiler reports the grate.

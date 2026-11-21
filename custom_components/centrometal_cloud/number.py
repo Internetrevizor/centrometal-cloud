@@ -157,6 +157,8 @@ async def async_setup_entry(hass: HomeAssistant, config_entry, async_add_entitie
 class WebBoilerSettingNumber(NumberEntity, RestoreEntity):
     """One editable controller setting."""
 
+    _attr_has_entity_name = True
+
     _attr_mode = NumberMode.BOX
 
     def __init__(self, hass: HomeAssistant, device, row: dict[str, Any]) -> None:

@@ -80,7 +80,7 @@ Older PelTec, Compact, CM Pelet-set, BioTec and BioTec Plus keep the mappings in
 
 ## Entity names
 
-Names are `<product> <entity>` ("PelTec II Lambda Boiler Temperature"). With **Prefix entity names with the product name** switched off in the options they are `<entity>` alone. The optional entity-name prefix from setup and, on accounts with several boilers, the serial number still come first. Entity IDs do not change with either setting.
+Each boiler is a device named `<prefix><serial> <product>` ("PelTec II Lambda"; the prefix from setup and the serial, on accounts with several boilers, only when present). Each entity has its own name ("Boiler Temperature"), and Home Assistant shows it after the device name ("PelTec II Lambda Boiler Temperature"). Renaming the device renames what is shown, and Home Assistant offers to rename the entity IDs with it.
 
 ## Hydraulic configuration
 

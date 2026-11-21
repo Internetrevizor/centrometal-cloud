@@ -182,34 +182,33 @@ async def test_pellet_mode_button_sends_the_command(hass, entry, website):
     assert {"cmd-name": "SCCMD", "cmd-value": 1} in website.commands_to(4242)
 
 
-# Naming option
+# Names
 
 
-@pytest.mark.parametrize("entry_options", [{"product_prefix": False}])
-async def test_product_prefix_switched_off(hass, entry):
-    await _setup(hass, entry)
-    assert _state(hass, "sensor", "PT2SERIAL-B_P2").name == "P2 DHW Recirculation Pump (K1)"
-    assert _state(hass, "sensor", "PT2SERIAL-K1B_P").name == "DHW Pump (K1)"
+async def test_the_device_carries_the_product_and_the_entities_their_own_part(hass, entry):
+    """Home Assistant 2026.10+ puts the device name in front of every entity name: the product is in the device name
+    only, and a new install gets the entity_ids it got before 2026.10."""
+    from homeassistant.helpers import device_registry as dr
 
-
-async def test_options_flow_switches_the_product_prefix_off(hass, entry):
     await _setup(hass, entry)
     entity_id = _entity_id(hass, "sensor", "PT2SERIAL-B_P2")
+    assert entity_id == "sensor.peltec_ii_lambda_p2_dhw_recirculation_pump_k1"
+    assert hass.states.get(entity_id).name == "PelTec II Lambda P2 DHW Recirculation Pump (K1)"
+    device_id = er.async_get(hass).async_get(entity_id).device_id
+    assert dr.async_get(hass).async_get(device_id).name == "PelTec II Lambda"
 
+
+async def test_options_flow_saves_the_timing(hass, entry):
+    await _setup(hass, entry)
     result = await hass.config_entries.options.async_init(entry.entry_id)
     assert result["type"] is FlowResultType.FORM
     result = await hass.config_entries.options.async_configure(
-        result["flow_id"],
-        {"product_prefix": False, "refresh_interval": 240, "retry_base_interval": 60, "retry_max_interval": 1800},
+        result["flow_id"], {"refresh_interval": 300, "retry_base_interval": 60, "retry_max_interval": 1800}
     )
     assert result["type"] is FlowResultType.CREATE_ENTRY
     await hass.async_block_till_done()
-
-    assert entry.options["product_prefix"] is False
+    assert entry.options["refresh_interval"] == 300
     assert entry.state is ConfigEntryState.LOADED
-    # Same entity, new display name.
-    assert _entity_id(hass, "sensor", "PT2SERIAL-B_P2") == entity_id
-    assert hass.states.get(entity_id).name == "P2 DHW Recirculation Pump (K1)"
 
 
 # Setup paths

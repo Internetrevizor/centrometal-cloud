@@ -33,11 +33,9 @@ def create_device_info(device) -> DeviceInfo:
     power = display_value((parameters.get("B_sng") or {}).get("value"))
     firmware_ver = display_value((parameters.get("B_VER") or {}).get("value"))
     model = f"{device['product']} {power}"
-    serial = device["serial"]
-    name = f"Centrometal Boiler {model} {serial}"
     return DeviceInfo(
-        identifiers={(DOMAIN, serial)},
-        name=name,
+        identifiers={(DOMAIN, device["serial"])},
+        name=device_name(device),
         manufacturer="Centrometal",
         model=model,
         sw_version=firmware_ver,
@@ -59,18 +57,21 @@ def format_time(hass: HomeAssistant, timestamp, tzinfo=None) -> str:
     return dt_util.as_local(dt).strftime(TIMESTAMP_FORMAT)
 
 
-def format_name(hass: HomeAssistant, device, name) -> str:
-    # Entity names are built as "<product> <what it is>". With the product
-    # prefix switched off in the options, drop the product part here, in one
-    # place, instead of at every entity.
-    product = device.get("product")
-    if device.get("__product_prefix", True) is False and product and name.startswith(f"{product} "):
-        name = name[len(product) + 1 :]
-    name = name.replace("GMX EASY", "biotec")
-    serial = device["serial"]
+def device_name(device) -> str:
+    """The device's name: "<prefix><serial, with several boilers><product>".
+
+    Home Assistant puts it in front of every entity's own name and builds the entity_ids from both, so a new install
+    gets the entity_ids that the names "<prefix><serial> <product> <what it is>" gave before Home Assistant 2026.10.
+    """
+    name = device["product"].replace("GMX EASY", "biotec")
     if device.get("__multi_device"):
-        name = f"{serial} {name}"
-    prefix = device.get("__prefix", "")
-    if prefix:
-        return f"{prefix}{name}"
+        name = f"{device['serial']} {name}"
+    return f"{device.get('__prefix', '')}{name}"
+
+
+def format_name(hass: HomeAssistant, device, name) -> str:
+    """The entity's own name: "<product> <what it is>" without the product, which the device name carries."""
+    product = device.get("product")
+    if product and name.startswith(f"{product} "):
+        name = name[len(product) + 1 :]
     return name

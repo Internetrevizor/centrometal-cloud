@@ -28,6 +28,8 @@ async def async_setup_entry(hass: HomeAssistant, config_entry, async_add_entitie
 class WebBoilerPelletModeButton(ButtonEntity):
     """Switch a BioTec-Plus from wood to pellets. There is no command back to wood."""
 
+    _attr_has_entity_name = True
+
     _attr_icon = "mdi:grain"
 
     def __init__(self, hass: HomeAssistant, device) -> None:

@@ -20,6 +20,7 @@ async def async_setup_entry(hass: HomeAssistant, config_entry, async_add_entitie
 
 
 class WebBoilerWebsocketStatus(BinarySensorEntity):
+    _attr_has_entity_name = True
     _attr_entity_category = EntityCategory.DIAGNOSTIC
     _attr_translation_key = "websocket_status"
 
@@ -30,7 +31,7 @@ class WebBoilerWebsocketStatus(BinarySensorEntity):
         self.device = device
         self._serial = device["serial"]
         self._unique_id = f"{self._serial}_websocket_status"
-        self._name = format_name(hass, device, "Centrometal Boiler System connection")
+        self._name = format_name(hass, device, "System Connection")
         self._callback_key = self._unique_id
 
     async def async_added_to_hass(self):
@@ -69,6 +70,8 @@ class WebBoilerWebsocketStatus(BinarySensorEntity):
 
 class WebBoilerExternalStartInput(BinarySensorEntity):
     """Portal-confirmed bit 6 of the hexadecimal B_Inp1 input mask."""
+
+    _attr_has_entity_name = True
 
     def __init__(self, hass: HomeAssistant, device) -> None:
         super().__init__()

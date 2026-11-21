@@ -19,11 +19,9 @@ from .centrometal_web_boiler import (
     redact_account,
 )
 from .const import (
-    CONF_PRODUCT_PREFIX,
     CONF_REFRESH_INTERVAL,
     CONF_RETRY_BASE_INTERVAL,
     CONF_RETRY_MAX_INTERVAL,
-    DEFAULT_PRODUCT_PREFIX,
     DEFAULT_REFRESH_INTERVAL,
     DEFAULT_RETRY_BASE_INTERVAL,
     DEFAULT_RETRY_MAX_INTERVAL,
@@ -129,7 +127,6 @@ class WebBoilerSystem:
         self._log_account = redact_account(username)
         prefix = prefix.rstrip()
         self.prefix = (prefix + " ") if prefix else ""
-        self.product_prefix = bool(entry.options.get(CONF_PRODUCT_PREFIX, DEFAULT_PRODUCT_PREFIX))
         self.web_boiler_client = WebBoilerClient(hass, ssl_context_factory=_ha_ssl_context_factory)
         # Entities must not go unavailable between two scheduled refreshes, so
         # the window follows the configured interval instead of a fixed 300 s
@@ -167,7 +164,6 @@ class WebBoilerSystem:
             device["__client"] = self.web_boiler_client
             device["__system"] = self
             device["__prefix"] = self.prefix
-            device["__product_prefix"] = self.product_prefix
             device["__multi_device"] = multi
 
     async def start(self) -> None:

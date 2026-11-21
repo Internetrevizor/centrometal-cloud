@@ -31,6 +31,7 @@ def _value_is_on(v: Any) -> bool | None:
 
 
 class WebBoilerPowerSwitch(SwitchEntity):
+    _attr_has_entity_name = True
     def __init__(self, hass: HomeAssistant, device) -> None:
         self.hass = hass
         self.web_boiler_client = device["__client"]

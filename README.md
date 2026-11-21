@@ -1,6 +1,6 @@
 # Centrometal Cloud for Home Assistant
 
-![Version](https://img.shields.io/badge/version-1.0.4-blue.svg)
+![Version](https://img.shields.io/badge/version-1.0.5-blue.svg)
 ![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2024.11%2B-blue.svg)
 ![License](https://img.shields.io/badge/license-Apache%202.0-green.svg)
 
@@ -84,7 +84,7 @@ Or by hand:
 
 ### Coming from hass-centrometal-boiler
 
-This integration replaces [Internetrevizor/hass-centrometal-boiler](https://github.com/Internetrevizor/hass-centrometal-boiler). Entity names are the same, so the entity IDs and their history carry over if the old integration is removed first:
+This integration replaces [Internetrevizor/hass-centrometal-boiler](https://github.com/Internetrevizor/hass-centrometal-boiler). Entity names are the same, so the entity IDs and their history carry over if the old integration is removed first (the connection sensor is the exception: it is now `binary_sensor.<device>_system_connection`):
 
 1. Remove the old integration (**Settings → Devices & services → Centrometal Boiler System → Delete**), then its `custom_components/centrometal_boiler` folder, and restart.
 2. Install this one and add it with the same account.
@@ -100,12 +100,11 @@ Read the [changelog](CHANGELOG.md) first: when a release changes a state text, a
 
 ## Configuration
 
-Configuration is through the Home Assistant UI. Enter the Centrometal account e-mail, password, and optional entity-name prefix.
+Configuration is through the Home Assistant UI. Enter the Centrometal account e-mail, password, and optional name prefix.
 
-The integration options (**Configure**) control:
+Each boiler is a device named after its product ("PelTec II Lambda"), after the optional prefix and, on an account with several boilers, the serial number. Home Assistant puts the device name in front of every entity name ("PelTec II Lambda Boiler Temperature") and builds the entity IDs from both (`sensor.peltec_ii_lambda_boiler_temperature`). To shorten or change the names, rename the device: Home Assistant offers to rename its entities with it.
 
-- **Prefix entity names with the product name**: on by default ("PelTec II Lambda Boiler Temperature"); off gives "Boiler Temperature". Only the displayed names change; entity IDs stay the same.
-- HTTP refresh and reconnect timing.
+The integration options (**Configure**) control the HTTP refresh and reconnect timing.
 
 There are no schedule or weather switches. The setup and options screens are available in English, French and Romanian; entity names stay in English.
 

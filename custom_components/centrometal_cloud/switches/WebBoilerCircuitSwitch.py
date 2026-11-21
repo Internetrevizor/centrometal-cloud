@@ -14,6 +14,7 @@ from .circuit_state import (
 
 
 class WebBoilerCircuitSwitch(SwitchEntity):
+    _attr_has_entity_name = True
     def __init__(self, hass: HomeAssistant, device, naslov, dbindex) -> None:
         self.hass = hass
         self.web_boiler_client = device["__client"]
