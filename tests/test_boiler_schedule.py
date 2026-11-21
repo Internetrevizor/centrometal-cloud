@@ -18,7 +18,7 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-sys.path.insert(0, str(ROOT / "custom_components" / "centrometal_cloud"))
+sys.path.append(str(ROOT / "custom_components" / "centrometal_cloud"))  # after the stdlib: calendar.py is a platform
 
 from centrometal_web_boiler.WebBoilerClient import SCHEDULE_READ_SECONDS, WebBoilerClient  # noqa: E402
 from centrometal_web_boiler.WebBoilerDeviceCollection import (  # noqa: E402

@@ -10,7 +10,7 @@ import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "custom_components" / "centrometal_cloud"))
+sys.path.append(str(ROOT / "custom_components" / "centrometal_cloud"))  # after the stdlib: calendar.py is a platform
 
 from centrometal_web_boiler.WebBoilerClient import WebBoilerClient  # noqa: E402
 
