@@ -110,7 +110,7 @@ PELTEC2_LATE_SLOT["parameter_list"]["parameters"][0]["list"].append(
 @pytest.mark.parametrize("boilers", [[PELTEC2_LATE_SLOT]])
 async def test_a_setting_missing_from_the_snapshot_is_read_from_the_controller(hass, entry, website):
     await _setup(hass, entry)
-    assert website.settings_reads_from(1001) == [{"parameters": {"PRD 71": "VAL"}}]
+    assert website.settings_reads_from(1001) == [{"parameters": {"PRD 71 0": "ALL"}}]
 
 
 @pytest.mark.parametrize("boilers", [[PELTEC2_LATE_SLOT]])

@@ -3,8 +3,9 @@
 Owner's diagnostics, PelTec II Lambda v3.03dL: parameter-list listed seven
 editable settings, but the status snapshot carried only some of them (on
 04.11.2026 only slot 576), and the rest came back only when the settings page
-was opened on the portal website. The client now asks the controller for the
-missing slots with the portal's own read, "PRD <slot>": "VAL".
+was opened on the portal website. The client asks the controller for the
+missing slots with the portal's own read, one slot per request:
+{"PRD 67 0": "ALL"}, which brings the value, the limits and the default.
 """
 
 from __future__ import annotations
@@ -31,8 +32,8 @@ class _Http:
         self.reads: list[tuple] = []
         self.fail = fail
 
-    async def read_settings(self, id_, dbindexes):
-        self.reads.append((id_, list(dbindexes)))
+    async def read_setting(self, id_, dbindex):
+        self.reads.append((id_, dbindex))
         if self.fail:
             raise HttpClientConnectionError("portal down")
         return {"status": "success"}
@@ -62,11 +63,11 @@ def test_only_the_slots_without_value_or_minimum_are_missing() -> None:
     assert WebBoilerClient.missing_settings(device) == [67, 71, 291]
 
 
-def test_the_missing_slots_are_requested_in_one_read() -> None:
+def test_each_missing_slot_is_requested_on_its_own() -> None:
     async def runner() -> None:
         client, _device, http = _client(REPORTED_576)
-        await client._request_missing_settings(1001, now=1000.0)
-        assert http.reads == [(1001, [67, 71, 291])]
+        await client._request_missing_settings(1001, now=1000.0, delay=0)
+        assert http.reads == [(1001, 67), (1001, 71), (1001, 291)]
 
     asyncio.run(runner())
 
@@ -77,7 +78,7 @@ def test_nothing_is_sent_when_every_slot_is_reported() -> None:
         for i in (67, 71, 291):
             slots.update({f"PVAL_{i}_0": "1", f"PMIN_{i}_0": "0"})
         client, _device, http = _client(slots)
-        await client._request_missing_settings(1001, now=1000.0)
+        await client._request_missing_settings(1001, now=1000.0, delay=0)
         assert http.reads == []
 
     asyncio.run(runner())
@@ -86,12 +87,12 @@ def test_nothing_is_sent_when_every_slot_is_reported() -> None:
 def test_the_read_is_repeated_at_most_once_an_hour() -> None:
     async def runner() -> None:
         client, _device, http = _client(REPORTED_576)
-        await client._request_missing_settings(1001, now=1000.0)
-        await client._request_missing_settings(1001, now=1000.0 + 240)
-        await client._request_missing_settings(1001, now=1000.0 + 3599)
-        assert len(http.reads) == 1
-        await client._request_missing_settings(1001, now=1000.0 + 3600)
-        assert len(http.reads) == 2
+        await client._request_missing_settings(1001, now=1000.0, delay=0)
+        await client._request_missing_settings(1001, now=1000.0 + 240, delay=0)
+        await client._request_missing_settings(1001, now=1000.0 + 3599, delay=0)
+        assert len(http.reads) == 3
+        await client._request_missing_settings(1001, now=1000.0 + 3600, delay=0)
+        assert len(http.reads) == 6
 
     asyncio.run(runner())
 
@@ -99,7 +100,8 @@ def test_the_read_is_repeated_at_most_once_an_hour() -> None:
 def test_a_failed_read_does_not_fail_the_refresh() -> None:
     async def runner() -> None:
         client, _device, http = _client(REPORTED_576, fail=True)
-        await client._request_missing_settings(1001, now=1000.0)
+        await client._request_missing_settings(1001, now=1000.0, delay=0)
+        # The first failure stops the round; the next one is an hour away.
         assert len(http.reads) == 1
 
     asyncio.run(runner())
@@ -115,7 +117,8 @@ def test_the_read_uses_the_portal_command_shape() -> None:
             return {"status": "success"}
 
         http._control_advanced = control_advanced
-        await http.read_settings(1001, [71, 291])
-        assert sent == [(1001, {"parameters": {"PRD 71": "VAL", "PRD 291": "VAL"}})]
+        await http.read_setting(1001, 71)
+        # As the portal sends it when its settings page opens.
+        assert sent == [(1001, {"parameters": {"PRD 71 0": "ALL"}})]
 
     asyncio.run(runner())

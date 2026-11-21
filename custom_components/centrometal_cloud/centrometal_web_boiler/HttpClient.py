@@ -431,16 +431,16 @@ class HttpClient(HttpClientBase):
         data = {"parameters": params}
         return await self._control_advanced(id, data)
 
-    async def read_settings(self, id: str | int, dbindexes: list[int | str]) -> dict[str, Any]:
-        """Ask the controller to report settings slots it has not reported.
+    async def read_setting(self, id: str | int, dbindex: int | str) -> dict[str, Any]:
+        """Ask the controller to report one settings slot: value, limits and default.
 
-        "PRD <slot>": "VAL" is the portal's read of one slot's value, the
-        counterpart of the "PWR <slot>" write, as the portal web application
-        sends it when it reads a PelTec slot: {"PRD 222": "VAL"}.
-        The controller answers through the realtime channel and the status
-        snapshot, not in this response.
+        The portal's own read when its settings page opens, one slot per
+        request: {"PRD 67 0": "ALL"} brings PVAL_67_0, PMIN_67_0, PMAX_67_0 and
+        PDEF_67_0 together. "PRD 67": "VAL" brings the value alone, without the
+        limits a write needs. The controller answers through the realtime
+        channel and the status snapshot, not in this response.
         """
-        data = {"parameters": {f"PRD {dbindex}": "VAL" for dbindex in dbindexes}}
+        data = {"parameters": {f"PRD {dbindex} 0": "ALL"}}
         return await self._control_advanced(id, data)
 
     def get_table_data_all(self, id: str | int, tableStartIndex: int, tableSize: int) -> list:

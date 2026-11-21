@@ -4,6 +4,7 @@
 
 - **New: Boiler Schedule calendar (PelTec II, read-only).** The controller's three weekly tables of boiler operating times and the "Boiler schedule" selector are read the way the portal reads them, `{"PRD 223": "VAL", "PRD 224": "ALV"}` and the same for 225 and 226, after setup and then every six hours. The calendar's events are the windows of the active table, in Home Assistant's time zone; with the selector on Off it has none. Its attributes give the active table and each table day by day ("04:00-08:00, 17:30-23:00"). The layout comes from the controller manual (pages 30–31) and was checked against a PelTec II Lambda read through the portal: ten values a day (T1–T5 starts and stops), minutes after midnight, bit 15 on a start, 1440 for an unused value.
 - The schedule values (`PVAL` of slots 223–226) are now kept when they arrive; their defaults and limits are still dropped.
+- **Settings are read with their limits.** A setting the portal leaves out is read the way the portal reads it when its settings page opens, one slot per request: `{"PRD 67 0": "ALL"}`, which brings the value, the minimum, the maximum and the default together. The earlier `{"PRD 67": "VAL"}` brought the value alone, so the setting could not be changed from Home Assistant until the limits arrived some other way, and the read was repeated every hour.
 - No existing entity, entity ID, name or state text changes.
 
 ## 1.0.5 — entity names for Home Assistant 2026.10 and later

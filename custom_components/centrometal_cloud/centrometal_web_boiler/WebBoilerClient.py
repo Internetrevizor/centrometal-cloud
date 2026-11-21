@@ -210,7 +210,7 @@ class WebBoilerClient:
             metadata_parameters = []
             now = time.monotonic()
             for id_ in ids:
-                await self._request_missing_settings(id_, now)
+                await self._request_missing_settings(id_, now, delay)
                 await self._request_schedule(id_, now, delay)
 
             # Event history is supplemental. A temporary failure of this
@@ -290,8 +290,8 @@ class WebBoilerClient:
                     break
         return missing
 
-    async def _request_missing_settings(self, id_, now: float) -> None:
-        """Read the settings slots the portal left out, at most once an hour."""
+    async def _request_missing_settings(self, id_, now: float, delay: float = 1.0) -> None:
+        """Read the settings slots the portal left out, at most once an hour, one per request."""
         key = str(id_)
         last = self.last_settings_read.get(key)
         if last is not None and now - last < 3600:
@@ -305,14 +305,17 @@ class WebBoilerClient:
             return
         self.last_settings_read[key] = now
         self.logger.debug("Requesting settings slots %s from the controller (%s)", missing, self.log_account)
-        try:
-            await self.http_client.read_settings(id_, missing)
-        except HttpClientAuthError:
-            raise
-        except HttpClientConnectionError as err:
-            # The read is a convenience: the slots still arrive whenever the
-            # portal reports them, so a failure here must not fail the refresh.
-            self.logger.warning("Could not request settings %s: %s (%s)", missing, err, self.log_account)
+        for dbindex in missing:
+            try:
+                await self.http_client.read_setting(id_, dbindex)
+            except HttpClientAuthError:
+                raise
+            except HttpClientConnectionError as err:
+                # The read is a convenience: the slots still arrive whenever the
+                # portal reports them, so a failure here must not fail the refresh.
+                self.logger.warning("Could not request settings %s: %s (%s)", missing, err, self.log_account)
+                return
+            await asyncio.sleep(delay)
 
     async def _request_schedule(self, id_, now: float, delay: float) -> None:
         """Read a PelTec II boiler schedule: the selector and each table, every six hours."""
