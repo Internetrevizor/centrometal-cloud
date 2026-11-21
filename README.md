@@ -1,6 +1,6 @@
 # Centrometal Cloud for Home Assistant
 
-![Version](https://img.shields.io/badge/version-1.0.3-blue.svg)
+![Version](https://img.shields.io/badge/version-1.0.4-blue.svg)
 ![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2024.11%2B-blue.svg)
 ![License](https://img.shields.io/badge/license-Apache%202.0-green.svg)
 
@@ -9,6 +9,19 @@ A Home Assistant integration for Centrometal boilers connected to the Centrometa
 To run a PelTec II Lambda without the cloud, see the companion project [Centrometal Local MQTT Protocol](https://github.com/Internetrevizor/centrometal-local-mqtt).
 
 **Tested on:** PelTec II Lambda, firmware v3.03dL, hydraulic scheme 43 (buffer + K1 DHW).
+
+## Supported boilers
+
+| Boiler | Portal type | Boiler on/off | Heating circuits on/off | Editable settings | Tested by the maintainer |
+|---|---|---|---|---|---|
+| PelTec II (Lambda) | `peltec2` | yes | yes | yes | **yes** |
+| PelTec | `peltec` | yes | yes | yes | no |
+| PelTec Compact | `compact` | yes (since 1.0.4) | yes | yes | no |
+| CM Pelet-set | `cmpelet` | yes | yes | yes | no |
+| BioTec (incl. BioTec-L) | `biotec` | no | yes | yes | no |
+| BioTec-Plus / Morvan GMX EASY | `biopl` | yes, plus Pellet Mode | yes | yes | no |
+
+Editable settings are the temperature rows the portal lets the account change. A boiler of a type not listed here still gets every parameter the portal sends, as a disabled diagnostic sensor. Reports from owners of untested boilers are welcome.
 
 ## PelTec II
 
@@ -37,7 +50,7 @@ Exposed PelTec II data includes:
 
 The Lambda Probe entity is created even when the controller omits the reading while the boiler is not firing. Any finite numeric value supplied by the controller, including idle values such as `25.5`, is displayed; a later live combustion value updates normally without reloading the integration. The Wi-Fi signal entity follows the controller display: nonzero values are shown in dB, while portal value `0` represents the unavailable `---dB` state and recovers automatically when RSSI is reported.
 
-PelTec, Compact, CM Pelet-set, BioTec and BioTec Plus boilers use the mappings of the original project. The maintainer has no such boiler and has not tested them; reports from owners are welcome.
+The other families use the mappings of the original project; see [Supported boilers](#supported-boilers).
 
 ## BioTec-Plus
 

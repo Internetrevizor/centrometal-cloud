@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.4 — PelTec Compact on/off, and no rejected values on numeric sensors
+
+- **PelTec Compact:** the boiler on/off switch is created, as on the PelTec, whose controller the Compact shares. Its boiler command value was already left out of the sensors in favour of that switch, so neither existed. The hydraulic configuration shows the scheme name ("4. BUF") instead of its index, and the burner grate sensor is created when the boiler reports the grate.
+- **Every family except PelTec II:** a sensor with a unit, a state class or a display precision reports "unknown" instead of a non-numeric value such as the "?" a parameter carries before the controller reports it. Home Assistant refused those values and logged an error at every update; counters were affected first.
+
 ## 1.0.3 — realtime data again after a change on the Centrometal servers
 
 - On 14.11.2026 Centrometal changed its realtime server: it refuses the subscription to `/topic/cm.inst.<type>.<serial>` (`ACCESS_REFUSED - read access to exchange 'amq.topic'`) for every account, so realtime updates stopped and values came only from HTTP polling. The integration now subscribes to `/exchange/stomp/cm.inst.<type>.<serial>`, and reads realtime messages with either destination.

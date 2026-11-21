@@ -33,10 +33,10 @@ class WebBoilerConfigurationSensor(WebBoilerGenericSensor):
             scheme = peltec2_scheme(value)
             if scheme is not None:
                 return scheme.label
-        if self.device["type"] in ("peltec", "peltec2"):
+        if self.device["type"] in ("peltec", "peltec2", "compact"):
             try:
                 idx = int(value)
-                if self.device["type"] == "peltec" and 0 <= idx < len(PELTEC_CONFIGURATIONS):
+                if self.device["type"] in ("peltec", "compact") and 0 <= idx < len(PELTEC_CONFIGURATIONS):
                     return PELTEC_CONFIGURATIONS[idx]
                 if idx >= 0:
                     # B_KONF is zero-based and the portal numbers schemes from

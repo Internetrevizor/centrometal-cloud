@@ -39,7 +39,7 @@ async def async_setup_entry(hass: HomeAssistant, config_entry, async_add_entitie
         # The controller manual exposes burner-grate position and movement.
         # Keep the existing entity implementation and unique ID for both
         # PelTec generations.
-        if device.get("type") in {"peltec", "peltec2"}:
+        if device.get("type") in {"peltec", "peltec2", "compact"}:
             all_entities.extend(WebBoilerFireGridSensor.create_entities(hass, device))
 
         if device.get("type") == "peltec2":

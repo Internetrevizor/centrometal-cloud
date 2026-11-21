@@ -46,6 +46,18 @@ _K1_OWN_PUMP = {"K1 Circuit Pump", "DHW Pump (K1)"}
 _BIOTEC_PLUS_LATE_PARAMETERS = ("B_razina", "B_razP")
 
 
+def _is_number(value: Any) -> bool:
+    if isinstance(value, bool):
+        return False
+    if isinstance(value, (int, float)):
+        return True
+    try:
+        float(str(value))
+    except (TypeError, ValueError):
+        return False
+    return True
+
+
 class WebBoilerGenericSensor(SensorEntity):
     def __init__(self, hass: HomeAssistant, device, sensor_data, parameter, disabled_by_default: bool = False) -> None:
         self.hass = hass
@@ -338,7 +350,15 @@ class WebBoilerGenericSensor(SensorEntity):
             return decode_tank_level(value)
         if self._param_name == "B_SUP_TYPE":
             return decode_internet_access(value)
+        if self._numeric_state_expected() and not _is_number(value):
+            # Home Assistant refuses a non-numeric state on a sensor with a unit, a state class or a display
+            # precision, and logs an error at every update. A parameter the portal lists before the controller has
+            # reported it carries "?": unknown until a value arrives.
+            return None
         return value
+
+    def _numeric_state_expected(self) -> bool:
+        return self.state_class is not None or bool(self._unit) or self.suggested_display_precision is not None
 
     @property
     def available(self) -> bool:
