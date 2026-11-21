@@ -1,9 +1,7 @@
 """One-shot boiler commands.
 
-Only the BioTec-Plus has one so far: switching from wood to pellets. The
-command comes from the AndroFlo BioTec-Plus fork
-(https://github.com/AndroFlo/hass-centrometal-boiler), where it was confirmed
-on a real boiler.
+Only the BioTec-Plus has one so far: switching from wood to pellets, a
+command confirmed by users on a real boiler (credited in NOTICE).
 """
 
 from __future__ import annotations

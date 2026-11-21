@@ -139,8 +139,7 @@ BIOTEC_PLUS_SENSOR_MISC = {
     "B_pbs": [None, "mdi:pine-tree", None, "Wood Pellet Mode"],
     "B_scs": [None, "mdi:controller-classic", None, "Control Mode"],
     "B_preuz": [None, "mdi:abacus", None, "Take Over"],
-    # Pellet tank state and estimated fill level, as decoded by the original
-    # integration (9a4gl) and the AndroFlo BioTec-Plus fork.
+    # Pellet tank state and estimated fill level.
     "B_razina": [None, "mdi:bucket-outline", None, "Tank Level"],
     "B_razP": [PERCENTAGE, "mdi:percent", None, "Fuel Level"],
 }

@@ -1,9 +1,8 @@
-"""Features first seen in other Centrometal integrations (credited in NOTICE).
+"""Features contributed by the community (credited in NOTICE).
 
-* BioTec-Plus tank level and fuel level (9a4gl, AndroFlo).
-* The "prefix entity names with the product name" option (9a4gl, contributed
-  by TheCarpetMerchant).
-* The BioTec-Plus "Pellet Mode" button (AndroFlo).
+* BioTec-Plus tank level and fuel level.
+* The "prefix entity names with the product name" option.
+* The BioTec-Plus "Pellet Mode" button.
 """
 
 from __future__ import annotations

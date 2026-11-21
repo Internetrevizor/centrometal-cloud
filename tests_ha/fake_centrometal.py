@@ -1,9 +1,7 @@
 """A local imitation of web-boiler.com: the website and the STOMP broker.
 
 Only what the integration's client relies on is reproduced, with the shapes of
-the real payloads. Idea and structure follow the AndroFlo fork's tests_ha
-(https://github.com/AndroFlo/hass-centrometal-boiler), adapted to this
-integration's own client.
+the real payloads (the idea is credited in NOTICE).
 """
 
 from __future__ import annotations

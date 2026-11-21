@@ -428,9 +428,8 @@ class HttpClient(HttpClientBase):
         """Ask the controller to report settings slots it has not reported.
 
         "PRD <slot>": "VAL" is the portal's read of one slot's value, the
-        counterpart of the "PWR <slot>" write. Taken from the original client
-        library (9a4gl/py-centrometal-web-boiler, 2021), which captured it from
-        the portal web application reading a PelTec slot: {"PRD 222": "VAL"}.
+        counterpart of the "PWR <slot>" write, as the portal web application
+        sends it when it reads a PelTec slot: {"PRD 222": "VAL"}.
         The controller answers through the realtime channel and the status
         snapshot, not in this response.
         """
@@ -462,9 +461,8 @@ class HttpClient(HttpClientBase):
     async def set_pellet_mode_by_id(self, id: str | int) -> dict[str, Any]:
         """Switch a wood/pellet boiler (BioTec-Plus) from wood to pellets.
 
-        Same envelope as the on/off command. Taken from the AndroFlo fork of the
-        client library, where it was confirmed on a BioTec-Plus. There is no
-        remote command back to wood.
+        Same envelope as the on/off command, confirmed on a BioTec-Plus. There
+        is no remote command back to wood.
         """
         data = {"cmd-name": "SCCMD", "cmd-value": 1}
         return await self._control(id, data)
