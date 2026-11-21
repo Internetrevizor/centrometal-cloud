@@ -25,9 +25,12 @@ from json import JSONDecodeError
 from typing import Any, TypedDict
 from collections.abc import Awaitable, Callable
 
-from .const import WEB_BOILER_STOMP_DEVICE_TOPIC
+from .const import WEB_BOILER_STOMP_DEVICE_DESTINATIONS
 from .logging_utils import redact_account
 from .parameter_filters import is_ignored_peltec2_parameter, is_session_parameter
+
+# Some installations come without "product"; it only names the entities.
+DEFAULT_PRODUCT = "Centrometal"
 
 
 class DeviceLookupError(LookupError):
@@ -271,10 +274,11 @@ class WebBoilerDeviceCollection(dict):
             new_device = WebBoilerDevice(self.username)
             new_device["id"] = device["value"]
             new_device["serial"] = device["label"]
-            new_device["place"] = device["place"]
-            new_device["address"] = device["address"]
+            new_device["place"] = device.get("place") or ""
+            new_device["address"] = device.get("address") or ""
             new_device["type"] = device["type"]
-            new_device["product"] = device["product"]
+            # Without "product" the setup failed with KeyError.
+            new_device["product"] = device.get("product") or DEFAULT_PRODUCT
             self[serial] = new_device
 
     async def parse_installation_statuses(self, installation_status_all: dict[str, Any]) -> None:
@@ -459,7 +463,7 @@ class WebBoilerDeviceCollection(dict):
         subscription = headers["subscription"]
         destination = headers["destination"]
 
-        if destination.startswith(WEB_BOILER_STOMP_DEVICE_TOPIC):
+        if destination.startswith(WEB_BOILER_STOMP_DEVICE_DESTINATIONS):
             dotpos = destination.rfind(".")
             serial = destination[dotpos + 1 :]
             try:

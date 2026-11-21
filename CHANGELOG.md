@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.3 — realtime data again after a change on the Centrometal servers
+
+- On 14.11.2026 Centrometal changed its realtime server: it refuses the subscription to `/topic/cm.inst.<type>.<serial>` (`ACCESS_REFUSED - read access to exchange 'amq.topic'`) for every account, so realtime updates stopped and values came only from HTTP polling. The integration now subscribes to `/exchange/stomp/cm.inst.<type>.<serial>`, and reads realtime messages with either destination.
+- An installation listed by the portal without `product`, `place` or `address` no longer stops the setup with `KeyError: 'product'`; its entities are named "Centrometal ...".
+
 ## 1.0.2 — no reconnect loop when the portal refuses the realtime subscription
 
 Fixes [#1](https://github.com/Internetrevizor/centrometal-cloud/issues/1). For some accounts the portal accepts the realtime (STOMP) login, then refuses the subscription to the boiler with `ACCESS_REFUSED - read access to exchange 'amq.topic'` and closes the connection. The reconnect loop started the next connection at once, about twice a second: each one logged an error (67,182 in nine hours in the report) and wrote the state of every entity twice. Values kept arriving by HTTP polling.

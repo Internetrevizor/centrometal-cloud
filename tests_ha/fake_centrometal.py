@@ -198,6 +198,7 @@ class FakeBroker:
     def __init__(self) -> None:
         self.connections: list = []
         self.subscriptions: dict[str, tuple] = {}  # destination -> (websocket, subscription id)
+        self.refused: list[str] = []
         self.server = None
         self.url = ""
 
@@ -224,13 +225,22 @@ class FakeBroker:
                     if lines[0] == "CONNECT":
                         await websocket.send("CONNECTED\nversion:1.1\nheart-beat:0,0\n\n\x00")
                     elif lines[0] == "SUBSCRIBE":
+                        if headers["destination"].startswith("/topic/"):
+                            # The portal since 14.11.2026: the old topic is refused and the session closed.
+                            self.refused.append(headers["destination"])
+                            await websocket.send(
+                                "ERROR\nmessage:access_refused\n\nACCESS_REFUSED - read access to exchange "
+                                "'amq.topic' in vhost '/' refused for user 'appuser'\x00"
+                            )
+                            await websocket.close()
+                            return
                         self.subscriptions[headers["destination"]] = (websocket, headers["id"])
         except Exception:
             pass  # connection dropped by drop_connections()
 
     async def publish(self, device_type: str, serial: str, values: dict) -> None:
         """Push a realtime update, as the controller does when a value changes."""
-        destination = f"/topic/cm.inst.{device_type}.{serial}"
+        destination = f"/exchange/stomp/cm.inst.{device_type}.{serial}"
         websocket, subscription = self.subscriptions[destination]
         await websocket.send(
             f"MESSAGE\nsubscription:{subscription}\ndestination:{destination}\n"
