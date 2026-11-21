@@ -9,8 +9,8 @@ PelTec II uses a strict allowlist:
 1. Create an entity only when the portal meaning and conversion are confirmed.
 2. Use internal helper values only to decode a confirmed entity.
 3. Do not create raw fallback entities for unknown controller fields.
-4. Do not create weather, schedule, or notification entities.
-5. Discard schedule values and weather groups during ingestion.
+4. Do not create weather or notification entities.
+5. Discard weather groups during ingestion. Keep the boiler schedule values (slots 223–226), which feed the read-only Boiler Schedule calendar.
 
 Examples of internal-only values include `B_addConf`, `B_Inp1`, and `B_cm2k`. `B_addConf` controls whether pellet percentage is meaningful, and bit 6 of `B_Inp1` is exposed as the decoded External Start Input binary sensor. The raw values themselves are not entities.
 
@@ -129,9 +129,22 @@ Where P1 is the K1 circuit's own pump, `K1B_P` already reports the same pump, so
 | `PF4` | PF4: Power failure — final fan blowing |
 | `C0` | C0: Grate cleaning |
 
+## Boiler schedule
+
+Read with the portal's request `{"PRD 223": "VAL", "PRD <table>": "ALV"}` after setup and then every six hours, and shown as the read-only calendar **Boiler Schedule**. Layout from the controller manual (2.2 Boiler schedule, pages 30–31), checked against a PelTec II Lambda (v3.03dL) read through the portal:
+
+| Slot | Meaning |
+|---|---|
+| `PVAL_223_0` | "Boiler schedule" selector: 0 Off, 1–3 Table 1–3 (only Off has been seen; the table numbers follow the manual's order) |
+| `PVAL_224_0`…`_69` | Table 1 |
+| `PVAL_225_0`…`_69` | Table 2 |
+| `PVAL_226_0`…`_69` | Table 3 |
+
+A table holds seven days from Monday, ten values a day: the starts and stops T1–T5. A value is minutes after midnight; a start also carries bit 15 (+32768), a stop does not, and 1440 is an unused value. Example: `33008` is a start at 04:00, `480` a stop at 08:00. A start without a stop after it runs to the end of the day.
+
 ## Data intentionally not exposed
 
-- Schedule selectors and table values (`PVAL`, `PDEF`, `PMIN`, and `PMAX` for database indexes 223–226)
+- Defaults and limits of the schedule slots (`PDEF`, `PMIN` and `PMAX` for database indexes 223–226)
 - Portal weather forecast data
 - Raw protocol/timing fields such as `PING`, `B_Time`, `CMD_TIME`, `SE00`, `SE01`, `SE02`, and `wf_req`
 - Raw encoded event markers (`IW1-1`, `IW1-2`); decoded event history is used instead

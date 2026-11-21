@@ -1,6 +1,6 @@
 # Centrometal Cloud for Home Assistant
 
-![Version](https://img.shields.io/badge/version-1.0.5-blue.svg)
+![Version](https://img.shields.io/badge/version-1.1.0-blue.svg)
 ![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2024.11%2B-blue.svg)
 ![License](https://img.shields.io/badge/license-Apache%202.0-green.svg)
 
@@ -31,7 +31,9 @@ Editable settings are written with the portal's own command, and Home Assistant 
 
 A change made from Home Assistant is finished only when the controller reports the new value (it waits up to 15 seconds). A value the controller already reports is not written again, and one setting accepts at most six changes in ten minutes, so an automation stuck in a loop cannot wear out the controller's memory.
 
-The integration does not create or load schedule, weather, or notification entities. Schedule values received inside the main boiler status stream are discarded before they enter the device parameter cache. Weather groups from the parameter-list response are discarded. There is no option to enable either feature.
+**Boiler schedule (read-only calendar).** The controller holds three weekly tables of boiler operating times (Table 1–3, up to five windows a day) and a "Boiler schedule" selector (Off or one of the tables). The integration reads them the way the portal does, after setup and then every six hours, and shows them as a calendar entity, **Boiler Schedule**: its events are the windows of the active table, and with the selector on Off it has none. The attributes give the active table and every table day by day. The tables are changed on the boiler or on the portal; the calendar does not change them.
+
+The integration does not create weather or notification entities. The portal's weather forecast is the portal's, for the installation's location, not a reading of the boiler; weather groups from the parameter-list response are discarded.
 
 Exposed PelTec II data includes:
 
@@ -106,7 +108,7 @@ Each boiler is a device named after its product ("PelTec II Lambda"), after the 
 
 The integration options (**Configure**) control the HTTP refresh and reconnect timing.
 
-There are no schedule or weather switches. The setup and options screens are available in English, French and Romanian; entity names stay in English.
+There are no weather switches. The setup and options screens are available in English, French and Romanian; entity names stay in English.
 
 When the integration stops creating an entity, its registry entry is removed on the next start. The cleanup is skipped for any boiler whose parameter snapshot looks incomplete, so an outage on the Centrometal side cannot delete working entities.
 

@@ -60,7 +60,7 @@ async def test_peltec2_scheme_43_entities(hass, entry):
 
 async def test_settings_the_portal_reports_are_not_read_again(hass, entry, website):
     await _setup(hass, entry)
-    assert website.reads_from(1001) == []
+    assert website.settings_reads_from(1001) == []
 
 
 async def test_realtime_update_reaches_the_boiler_state(hass, entry, broker):
@@ -110,7 +110,7 @@ PELTEC2_LATE_SLOT["parameter_list"]["parameters"][0]["list"].append(
 @pytest.mark.parametrize("boilers", [[PELTEC2_LATE_SLOT]])
 async def test_a_setting_missing_from_the_snapshot_is_read_from_the_controller(hass, entry, website):
     await _setup(hass, entry)
-    assert website.reads_from(1001) == [{"parameters": {"PRD 71": "VAL"}}]
+    assert website.settings_reads_from(1001) == [{"parameters": {"PRD 71": "VAL"}}]
 
 
 @pytest.mark.parametrize("boilers", [[PELTEC2_LATE_SLOT]])
@@ -144,6 +144,58 @@ async def test_a_setting_keeps_its_last_value_across_a_restart(hass, entry, brok
     await broker.publish("peltec2", "PT2SERIAL", {"PVAL_71_0": "9", "PMIN_71_0": "5", "PMAX_71_0": "20"})
     await wait_until(lambda: hass.states.get(entity_id).state == "9.0")
     assert "Restored" not in hass.states.get(entity_id).attributes
+
+
+# Boiler schedule: what a PelTec II Lambda sent when the portal read it.
+TABLE_DAYS = {
+    224: [33818] + [1440] * 9,
+    225: [33008, 480, 1440, 1440, 33818, 1380, 1440, 1440, 1440, 1440],
+    226: [32828, 180, 33128, 480, 33488, 840, 33788, 1140, 34028, 1380],
+}
+
+
+def _schedule(selector: int) -> dict[str, str]:
+    values = {"PVAL_223_0": str(selector)}
+    for slot, day in TABLE_DAYS.items():
+        values.update({f"PVAL_{slot}_{index}": str(value) for index, value in enumerate(day * 7)})
+    return values
+
+
+async def test_the_boiler_schedule_is_read_like_the_portal_reads_it(hass, entry, website):
+    await _setup(hass, entry)
+    assert website.schedule_reads_from(1001) == [
+        {"parameters": {"PRD 223": "VAL", "PRD 224": "ALV"}},
+        {"parameters": {"PRD 223": "VAL", "PRD 225": "ALV"}},
+        {"parameters": {"PRD 223": "VAL", "PRD 226": "ALV"}},
+    ]
+
+
+async def test_the_boiler_schedule_calendar_follows_the_controller(hass, entry, broker):
+    await _setup(hass, entry)
+    entity_id = _entity_id(hass, "calendar", "PT2SERIAL_calendar_boiler_schedule")
+    # Nothing reported yet.
+    assert hass.states.get(entity_id).state == "unavailable"
+
+    await broker.publish("peltec2", "PT2SERIAL", _schedule(selector=2))
+    await wait_until(lambda: hass.states.get(entity_id).state != "unavailable")
+    state = hass.states.get(entity_id)
+    assert state.attributes["Active table"] == "Table 2"
+    assert state.attributes["Table 3"]["Sun"] == "01:00-03:00, 06:00-08:00, 12:00-14:00, 17:00-19:00, 21:00-23:00"
+
+    events = await hass.services.async_call(
+        "calendar",
+        "get_events",
+        {"entity_id": entity_id, "start_date_time": "2026-11-23 00:00:00", "end_date_time": "2026-11-24 00:00:00"},
+        blocking=True,
+        return_response=True,
+    )
+    found = [(event["start"][11:16], event["end"][11:16]) for event in events[entity_id]["events"]]
+    assert found == [("04:00", "08:00"), ("17:30", "23:00")]
+
+    # Off: the tables stay in the attributes, the calendar has no events.
+    await broker.publish("peltec2", "PT2SERIAL", {"PVAL_223_0": "0"})
+    await wait_until(lambda: hass.states.get(entity_id).attributes["Active table"] == "Off")
+    assert hass.states.get(entity_id).state == "off"
 
 
 async def test_broker_restart_marks_the_connection_lost(hass, entry, broker):

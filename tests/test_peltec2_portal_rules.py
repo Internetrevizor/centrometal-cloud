@@ -71,9 +71,11 @@ def test_lambda_signal_and_percentage_validity() -> None:
     assert peltec2.valid_nonnegative_measurement("nan") is None
 
 
-def test_schedule_parameter_filter_covers_all_tables_and_metadata() -> None:
-    for family in ("PVAL", "PDEF", "PMIN", "PMAX"):
-        for dbindex in (223, 224, 225, 226):
+def test_schedule_filter_keeps_the_values_and_drops_the_limits() -> None:
+    for dbindex in (223, 224, 225, 226):
+        # The values feed the schedule calendar.
+        assert is_ignored_peltec2_parameter(f"PVAL_{dbindex}_0") is False
+        for family in ("PDEF", "PMIN", "PMAX"):
             assert is_ignored_peltec2_parameter(f"{family}_{dbindex}_0") is True
     assert is_ignored_peltec2_parameter("PVAL_272_0") is False
     assert is_ignored_peltec2_parameter("B_Tk1") is False

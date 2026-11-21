@@ -347,7 +347,7 @@ def test_external_start_is_decoded_without_a_raw_auxiliary_input_sensor() -> Non
     assert "B_Inp1" not in _by_parameter(sensor_entities)
 
 
-def test_schedule_values_are_dropped_during_http_ingestion() -> None:
+def test_schedule_values_are_kept_during_http_ingestion() -> None:
     snapshot = _load(HTTP_FIXTURE)
     device = _make_device()
     collection = WebBoilerDeviceCollection("user@example.com")
@@ -360,14 +360,14 @@ def test_schedule_values_are_dropped_during_http_ingestion() -> None:
     }
     asyncio.run(collection.parse_installation_statuses(payload))
 
-    assert not any(
-        code.startswith(("PVAL_223_", "PVAL_224_", "PVAL_225_", "PVAL_226_")) for code in device["parameters"]
-    )
+    # The schedule values are kept for the calendar; their limits are not.
+    assert device["parameters"]["PVAL_223_0"]["value"] == "0"
+    assert device["parameters"]["PVAL_224_0"]["value"] == "33818"
     assert not any(code.startswith(("PDEF_223_", "PMIN_224_", "PMAX_224_")) for code in device["parameters"])
     assert "B_Tk1" in device["parameters"]
 
 
-def test_schedule_values_are_dropped_during_websocket_ingestion() -> None:
+def test_schedule_values_are_kept_during_websocket_ingestion() -> None:
     device = _make_device({"B_Tk1": "20"})
     collection = WebBoilerDeviceCollection("user@example.com")
     collection[SERIAL] = device
@@ -379,8 +379,8 @@ def test_schedule_values_are_dropped_during_websocket_ingestion() -> None:
         "body": '{"PVAL_223_0":"1","PVAL_224_0":"33818","B_Tk1":"31.5"}',
     }
     asyncio.run(collection.parse_real_time_frame(frame))
-    assert "PVAL_223_0" not in device["parameters"]
-    assert "PVAL_224_0" not in device["parameters"]
+    assert device["parameters"]["PVAL_223_0"]["value"] == "1"
+    assert device["parameters"]["PVAL_224_0"]["value"] == "33818"
     assert device.get_parameter("B_Tk1")["value"] == "31.5"
 
 

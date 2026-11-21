@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.0 — the boiler schedule as a calendar
+
+- **New: Boiler Schedule calendar (PelTec II, read-only).** The controller's three weekly tables of boiler operating times and the "Boiler schedule" selector are read the way the portal reads them, `{"PRD 223": "VAL", "PRD 224": "ALV"}` and the same for 225 and 226, after setup and then every six hours. The calendar's events are the windows of the active table, in Home Assistant's time zone; with the selector on Off it has none. Its attributes give the active table and each table day by day ("04:00-08:00, 17:30-23:00"). The layout comes from the controller manual (pages 30–31) and was checked against a PelTec II Lambda read through the portal: ten values a day (T1–T5 starts and stops), minutes after midnight, bit 15 on a start, 1440 for an unused value.
+- The schedule values (`PVAL` of slots 223–226) are now kept when they arrive; their defaults and limits are still dropped.
+- No existing entity, entity ID, name or state text changes.
+
 ## 1.0.5 — entity names for Home Assistant 2026.10 and later
 
 - Home Assistant 2026.10 puts the device name in front of the name of every entity that does not name itself after its device. Every entity carried the product in its own name and the device was "Centrometal Boiler <product> <power> <serial>", so a new install got names such as "Centrometal Boiler PelTec II Lambda 36 SN000001 PelTec II Lambda Boiler Temperature" and entity IDs to match. Every entity now names itself after its device (`has_entity_name`): the device is named after the product ("PelTec II Lambda", after the optional prefix and, with several boilers, the serial), and each entity keeps only its own part ("Boiler Temperature"). A new install gets the entity IDs it got before 2026.10 (`sensor.peltec_ii_lambda_boiler_temperature`).

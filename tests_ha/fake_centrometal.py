@@ -189,6 +189,13 @@ class FakeWebsite:
     def reads_from(self, device_id: int) -> list[dict]:
         return [payload for path, payload in self.commands if path == f"/api/inst/control/advanced/{device_id}"]
 
+    def settings_reads_from(self, device_id: int) -> list[dict]:
+        """Reads of settings slots, leaving out the boiler schedule (slot 223 and its tables)."""
+        return [read for read in self.reads_from(device_id) if "PRD 223" not in read["parameters"]]
+
+    def schedule_reads_from(self, device_id: int) -> list[dict]:
+        return [read for read in self.reads_from(device_id) if "PRD 223" in read["parameters"]]
+
 
 class FakeBroker:
     """Minimal STOMP broker: CONNECT, SUBSCRIBE, and pushing MESSAGE frames."""

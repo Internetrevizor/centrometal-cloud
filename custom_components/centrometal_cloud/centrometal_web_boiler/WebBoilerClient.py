@@ -53,6 +53,14 @@ def _response_is_success(response: Any) -> bool:
     return False
 
 
+# The PelTec II boiler schedule: selector slot 223 and Table 1-3 in 224-226,
+# read the way the portal reads them, {"PRD 223": "VAL", "PRD 224": "ALV"}.
+# Schedules change rarely, so they are read after setup and then every six hours.
+SCHEDULE_SELECTOR_SLOT = 223
+SCHEDULE_TABLE_COUNT = 3
+SCHEDULE_READ_SECONDS = 6 * 3600
+
+
 class WebBoilerClient:
     def __init__(self, hass=None, *, ssl_context_factory: SSLContextFactory | None = None):
         self.hass = hass
@@ -82,6 +90,8 @@ class WebBoilerClient:
         # Device id -> monotonic time of the last read request for its missing
         # settings slots (see _request_missing_settings).
         self.last_settings_read: dict[str, float] = {}
+        # Device id -> monotonic time of the last read of its boiler schedule.
+        self.last_schedule_read: dict[str, float] = {}
         self.disconnected_since: float | None = time.monotonic()
 
     async def login(self, username, password):
@@ -201,6 +211,7 @@ class WebBoilerClient:
             now = time.monotonic()
             for id_ in ids:
                 await self._request_missing_settings(id_, now)
+                await self._request_schedule(id_, now, delay)
 
             # Event history is supplemental. A temporary failure of this
             # endpoint must not invalidate a successful boiler-state refresh.
@@ -302,6 +313,33 @@ class WebBoilerClient:
             # The read is a convenience: the slots still arrive whenever the
             # portal reports them, so a failure here must not fail the refresh.
             self.logger.warning("Could not request settings %s: %s (%s)", missing, err, self.log_account)
+
+    async def _request_schedule(self, id_, now: float, delay: float) -> None:
+        """Read a PelTec II boiler schedule: the selector and each table, every six hours."""
+        key = str(id_)
+        last = self.last_schedule_read.get(key)
+        if last is not None and now - last < SCHEDULE_READ_SECONDS:
+            return
+        try:
+            device = self.data.get_device_by_id(id_)
+        except LookupError:
+            return
+        if device.get("type") != "peltec2":
+            return
+        self.last_schedule_read[key] = now
+        self.logger.debug("Requesting the boiler schedule from the controller (%s)", self.log_account)
+        for table in range(1, SCHEDULE_TABLE_COUNT + 1):
+            try:
+                await self.http_client.get_table_data(id_, SCHEDULE_SELECTOR_SLOT, table)
+            except HttpClientAuthError:
+                raise
+            except HttpClientConnectionError as err:
+                # Like the settings read: the calendar keeps what it has, and
+                # the next read is six hours away.
+                self.logger.warning("Could not request the boiler schedule: %s (%s)", err, self.log_account)
+                return
+            # The controller answers each table in nine realtime messages.
+            await asyncio.sleep(delay)
 
     async def _notify_connectivity(self):
         for callback in list(self.connectivity_callbacks.values()):

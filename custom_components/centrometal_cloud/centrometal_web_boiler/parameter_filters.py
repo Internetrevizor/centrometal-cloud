@@ -20,11 +20,11 @@ def is_session_parameter(name: str) -> bool:
 
 
 def is_ignored_peltec2_parameter(name: str) -> bool:
-    """Return whether a PelTec II parameter is schedule-only data.
+    """Return whether a PelTec II parameter is a default or limit of a schedule slot.
 
-    The Centrometal status snapshot and WebSocket stream include schedule
-    selector/table values even when the client never opens the timetable UI.
-    The integration intentionally does not store or expose those fields.
+    Slots 223-226 are the boiler schedule (the selector and three weekly
+    tables). Their values (PVAL) are kept for the schedule calendar; a default,
+    minimum or maximum of a table entry says nothing useful and is dropped.
     """
     parts = name.split("_")
-    return len(parts) >= 2 and parts[0] in {"PVAL", "PDEF", "PMIN", "PMAX"} and parts[1] in _PELTEC2_SCHEDULE_DBINDEXES
+    return len(parts) >= 2 and parts[0] in {"PDEF", "PMIN", "PMAX"} and parts[1] in _PELTEC2_SCHEDULE_DBINDEXES

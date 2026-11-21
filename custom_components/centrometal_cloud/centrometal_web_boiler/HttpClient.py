@@ -417,6 +417,13 @@ class HttpClient(HttpClientBase):
         return await self._control_multiple(data)
 
     async def get_table_data(self, id: str | int, tableStartIndex: int, tableSubIndex: int) -> dict[str, Any]:
+        """Ask the controller for a selector slot and one of its tables.
+
+        The portal's own read of a PelTec II boiler schedule table:
+        {"PRD 223": "VAL", "PRD 225": "ALV"} reads the selector (223) and every
+        value of Table 2 (225). The controller answers through the realtime
+        channel, in several messages, not in this response.
+        """
         params = {
             "PRD " + str(tableStartIndex): "VAL",
             "PRD " + str(tableStartIndex + tableSubIndex): "ALV",
