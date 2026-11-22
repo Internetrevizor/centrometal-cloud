@@ -70,7 +70,7 @@ Editable controller settings (`PVAL_*` rows the account may change) are `number`
 
 ## Other families
 
-Older PelTec, Compact, CM Pelet-set, BioTec and BioTec Plus keep the mappings inherited from the original project (untested by the maintainer). On every `biotec` boiler a temperature of -55 or lower is unknown: the portal sends -55 for a sensor the controller does not read. A BioTec-L also gets its Boiler State and named codes, see [Boiler State (BioTec-L)](#boiler-state-biotec-l). A BioTec-Plus additionally gets:
+Older PelTec, Compact, CM Pelet-set, BioTec and BioTec Plus keep the mappings inherited from the original project (untested by the maintainer). On every `biotec` and `cmpelet` boiler a temperature of -55 or lower is unknown: the portal sends -55 for a sensor the controller does not read. On a BioTec and a BioTec-Plus `B_Tpov1` is the Return Temperature (named "Mixer Temperature" up to 1.2.0; the entity ID stays). A BioTec-L also gets its Boiler State and named codes, see [Boiler State (BioTec-L)](#boiler-state-biotec-l); a Cm Pelet-set its Boiler State, its decoded Setup and named codes, see [Cm Pelet-set](#boiler-state-cm-pelet-set). A BioTec-Plus additionally gets:
 
 | Parameter | Home Assistant entity | Rule |
 |---|---|---|
@@ -186,6 +186,43 @@ BioTec-L codes (pages 64–72), the names of their disabled diagnostic sensors:
 | `E29` | Communication error with WiFi | | |
 
 W12: the buffer tank is below the temperature that lets the pumps run. That is the "Minimum buffer tank temperature" setting (page 22: factory 20 °C, 5–64 °C, the default and limits the portal reports for slot 15); below it the controller stops the pumps and modules behind the tank, but not the DHW pump.
+
+## Boiler State (Cm Pelet-set)
+
+From "12. Burner working stages" in "Technical instructions CONTROLLER - CPREG-Touch" (page 49). A code the manual does not list in this form is shown as `Unknown (<code>)`.
+
+| Code | State text |
+|---|---|
+| `OFF` | OFF: Burner off |
+| `A0` | A0: Burner start, fan only |
+| `A1` | A1: Igniter on, start-up safety time running |
+| `A2` | A2: Initial pellet filling |
+| `A3` | A3: Waiting for flame |
+| `A4` | A4: Flame, igniter still on |
+| `A5` | A5: Igniter off, waiting for transition |
+| `PP1`…`PP5` | PP1: Transition stage 1 … PP5: Transition stage 5 |
+| `A6` | A6: Before nominal power |
+| `P` | P: Nominal power |
+| `P2`…`P6` | P2: Nominal power P2 … P6: Nominal power P6 |
+| `M4`…`M1` | M4: Modulation stage 4 … M1: Modulation stage 1 |
+| `PFON230` | PFON230: Power returned after a failure, resuming |
+| `F1` | F1: Pellet inlet pipe overload |
+| `S7` | S7: Extinguishing, first step |
+| `S7-1` | S7-1: Extinguishing, waiting for flame loss |
+| `S7-2` | S7-2: Extinguishing, fan at maximum |
+| `S7-3` | S7-3: Standby, waiting for start conditions |
+
+`Stage group` is `off`, `ignition_startup`, `nominal_power`, `modulation` (with `Power level` 1–4), `shutdown`, `standby`, `power_failure_recovery`, `overload` or `unknown`.
+
+**Setup** (`B_KONF_STR`, "A.7.2") keeps the marking as its state; its attributes spell out the three positions (pages 50–51):
+
+| Position | Values |
+|---|---|
+| Boiler connection | `A` accumulation tank via 3-way thermostatic valve · `B` accumulation tank via 3-way valve with actuator · `C` hydraulic crossover via 3-way thermostatic valve · `D` hydraulic crossover via 3-way valve with actuator · `E` hydraulic crossover with sensor via 3-way thermostatic valve · `F` hydraulic crossover with sensor via 3-way valve with actuator · `H` 4-way valve with actuator · `I` accumulation tank via 4-way valve with actuator · `J` hydraulic crossover via 4-way valve with actuator · `K` hydraulic crossover with sensor via 4-way valve with actuator |
+| DHW | `0` none · `1` DHW tank · `2` DHW tank with recirculation · `7` DHW tank in the boiler · `8` DHW tank in the boiler with recirculation |
+| Heating circuits with mixing valve | `0` none · `1` · `2` (CM2K modules not counted) |
+
+Codes (pages 95–105), the names of their disabled diagnostic sensors: `E0` Communication error with motherboard, `E1` Pressure switch, `E2` Ignition error, `E2_1` Ignition error after power failure, `E3` Pellet supply tube temperature too high, `E4` Boiler sensor, `E5` DHW sensor, `E6` Flame loss while working, `E6_1` Flame loss after power failure, `E7` Wrong date and time, `E8` Fan malfunction, `E9`/`E9_1`/`E9_2` Supply tube backfilled with pellets, `E10`/`E11` Buffer tank sensor (upper/lower), `E12` Hydraulic crossover sensor, `E13` Return line sensor, `E14` Outside temperature sensor, `E15`/`E16` 1st circuit sensor/corrector, `E17`/`E18` 2nd circuit sensor/corrector, `E19` Photocell error, `E20` Safety thermostat, `E21` Recirculation sensor, `E22` Unknown boiler power, `E23` Wrong boiler power, `E24` Fuel level, `E100_1`…`E100_3` Communication error with CM2K, `E100_5` … with CMGSM, `E100_6` … with CM WiFi module, `E100_7` … with CMNET, `E100_8` … with CMVAC, `E101`…`E112` CM2K 1+…6+ circuit sensor/corrector, `E119` Fuel sensor, `E120` Flap not closed, `E121` No pellets, `W1` Factory parameters loaded, `W2` Wrong date and time, `W3` Low return temperature, `W4` Fuel level.
 
 ## Boiler schedule
 

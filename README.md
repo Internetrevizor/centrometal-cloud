@@ -1,6 +1,6 @@
 # Centrometal Cloud for Home Assistant
 
-![Version](https://img.shields.io/badge/version-1.2.0-blue.svg)
+![Version](https://img.shields.io/badge/version-1.3.0-blue.svg)
 ![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2024.11%2B-blue.svg)
 ![License](https://img.shields.io/badge/license-Apache%202.0-green.svg)
 
@@ -60,7 +60,16 @@ From the controller manual ("Technical instructions REGULATION BioTec-L"), check
 
 - **Boiler State** with the BioTec-L operation phases (pages 60–62), which are not the PelTec II stages: see [PARAMETERS.md](PARAMETERS.md#boiler-state-biotec-l).
 - A temperature of **-55** is shown as unknown: the portal sends it for a sensor the controller does not read, and the controller's own screen shows "-" there.
+- `B_Tpov1` is the **Return Temperature** (sensor S7, "Return flow sensor", boiler manual page 32); up to 1.2.0 it was named "Mixer Temperature", here and on the BioTec-Plus.
 - The error, warning and information codes the boiler reports (`W11`, `W12`, …) are named after the manual ("W11 Out of fuel"). They stay disabled diagnostic sensors until it is known what their value says.
+
+## Cm Pelet-set
+
+From the controller manual "Technical instructions CONTROLLER - CPREG-Touch":
+
+- **Boiler State** with the burner working stages (page 49): see [PARAMETERS.md](PARAMETERS.md#boiler-state-cm-pelet-set). A stage the manual does not list in that form ("M-1") is shown as "Unknown (M-1)" rather than guessed.
+- **Setup** keeps the configuration marking ("A.7.2") and spells it out in its attributes (pages 50–51): how the boiler is connected, the DHW and the heating circuits with a mixing valve.
+- A temperature of **-55** is unknown, and the error and warning codes are named after the manual (pages 95–105), as on a BioTec-L.
 
 ## BioTec-Plus
 

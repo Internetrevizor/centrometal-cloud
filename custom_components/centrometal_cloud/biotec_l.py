@@ -7,7 +7,7 @@ Everything here comes from the controller manual, "Technical instructions REGULA
 * the codes, from "6.1. List and elimination of errors / warnings / informations", pages 64-72.
   E is an error, W a warning, I an information (page 30);
 * a sensor the controller cannot read is shown as "-" on its screen instead of a temperature (errors E1
-  and E2, page 64). Through the portal a BioTec-L reported -55 for its mixer and DHW temperatures and for
+  and E2, page 64). Through the portal a BioTec-L reported -55 for its return and DHW temperatures and for
   B_Ths1 at once, a value no water or room temperature reaches.
 
 The texts are Home Assistant state texts, so automations compare against them:

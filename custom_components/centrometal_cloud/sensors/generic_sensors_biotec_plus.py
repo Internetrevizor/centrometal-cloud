@@ -24,7 +24,7 @@ BIOTEC_PLUS_SENSOR_TEMPERATURES = {
         UnitOfTemperature.CELSIUS,
         "mdi:thermometer",
         SensorDeviceClass.TEMPERATURE,
-        "Mixer Temperature",
+        "Return Temperature",
     ],
     "B_Tk1b": [
         UnitOfTemperature.CELSIUS,

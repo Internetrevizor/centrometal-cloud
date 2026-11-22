@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.3.0 — Cm Pelet-set: Boiler State, Setup decoded; BioTec Return Temperature
+
+From the controller manual "Technical instructions CONTROLLER - CPREG-Touch" (Cm Pelet-set) and the boiler manual "Technical instructions BioTec-L".
+
+- **New on a Cm Pelet-set: Boiler State**, with the burner working stages (page 49): `A3: Waiting for flame`, `S7-3: Standby, waiting for start conditions` and the rest, listed in PARAMETERS.md. A stage the manual does not list in that form is shown as `Unknown (<code>)`. Until now the stage was a disabled, hidden sensor named "B_STATE"; it is enabled and becomes `sensor.<device>_boiler_state`, as on the BioTec-L in 1.2.0.
+- **Cm Pelet-set Setup decoded.** The state stays the marking ("A.7.2"); new attributes spell it out (pages 50–51): Boiler connection, DHW, Heating circuits with mixing valve.
+- **Cm Pelet-set:** -55 °C is unknown, as on the BioTec, and the error and warning codes are named after the manual (pages 95–105). The code sensors stay disabled.
+- **BioTec and BioTec-Plus: "Mixer Temperature" is now "Return Temperature".** `B_Tpov1` is the return flow sensor: S7 in the BioTec-L boiler manual (page 32), error E7 "Return flow sensor", and the same parameter is the return temperature on the PelTec. Only the name changes; the entity ID stays.
+- PelTec II and the other families: nothing changes.
+
 ## 1.2.0 — BioTec-L: Boiler State, codes and missing sensors
 
 From the controller manual "Technical instructions REGULATION BioTec-L" and the diagnostics of a BioTec-L (v2.47aL) in [#1](https://github.com/Internetrevizor/centrometal-cloud/issues/1).

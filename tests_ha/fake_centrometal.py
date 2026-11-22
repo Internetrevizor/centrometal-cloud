@@ -105,6 +105,23 @@ BIOTEC_L = boiler(
     },
 )
 
+# A Cm Pelet-set with the values of a published capture (scr34m/centrometal-reverse-engineering).
+PELET_SET = boiler(
+    6262,
+    "PSSERIAL",
+    "cmpelet",
+    "Cm Pelet-set",
+    {
+        "B_STATE": "S7-3",
+        "B_KONF": "12",
+        "B_KONF_STR": "A.7.2",
+        "B_PRODNAME": "Cm Pelet-set",
+        "B_VER": "v1.26h",
+        "B_Tk1": "65.3",
+        "B_Tak2": "-55",
+    },
+)
+
 
 class FakeWebsite:
     """aiohttp application recording the commands it receives."""

@@ -7,7 +7,7 @@ from homeassistant.components.sensor import SensorEntity, SensorDeviceClass, Sen
 from homeassistant.const import UnitOfPower, UnitOfTime, PERCENTAGE
 from homeassistant.core import HomeAssistant
 
-from .. import biotec_l
+from .. import biotec_l, pelet_set
 from ..common import create_device_info, display_value, format_name, format_time
 
 from .generic_sensors_all import GENERIC_SENSORS_COMMON, get_generic_temperature_settings_sensors
@@ -296,7 +296,7 @@ class WebBoilerGenericSensor(SensorEntity):
             return valid_temperature(self._param_name, value)
         if self.device.get("type") == "peltec2" and self._param_name == "B_Oxy1":
             return valid_lambda(value)
-        if self.device.get("type") == "biotec" and self._device_class == SensorDeviceClass.TEMPERATURE:
+        if self.device.get("type") in {"biotec", "cmpelet"} and self._device_class == SensorDeviceClass.TEMPERATURE:
             # -55 is a sensor the controller does not read; its screen shows "-" there. A valid value is kept as sent.
             return value if biotec_l.valid_temperature(value) is not None else None
         if self.device.get("type") == "peltec2" and self._param_name == "B_signal":
@@ -409,6 +409,9 @@ class WebBoilerGenericSensor(SensorEntity):
             except Exception:
                 pass
         attrs["Original name"] = self.parameter["name"]
+        if self._param_name == "B_KONF_STR" and pelet_set.is_pelet_set(self.device):
+            # The marking stays the state ("A.7.2"); its three parts are spelled out (manual pages 50-51).
+            attrs.update(pelet_set.configuration(self.parameter.get("value")) or {})
         if self.device.get("type") == "peltec2" and self._param_name == "B_start":
             attrs["Boiler state"] = self._parameter_value("B_STATE")
         if self.device.get("type") == "peltec2" and self._param_name == "B_specG":
@@ -685,7 +688,12 @@ class WebBoilerGenericSensor(SensorEntity):
             _LOGGER.debug("create_unknown_entities: exposing unclaimed parameter %s", param_name)
             # A BioTec-L error, warning or information code is named after the manual ("W11 Out of fuel"). What its
             # value says is not known yet, so it stays hidden like every other unclaimed parameter.
-            name = (biotec_l.code_name(param_name) if biotec_l.is_biotec_l(device) else None) or param_name
+            if biotec_l.is_biotec_l(device):
+                name = biotec_l.code_name(param_name) or param_name
+            elif pelet_set.is_pelet_set(device):
+                name = pelet_set.code_name(param_name) or param_name
+            else:
+                name = param_name
             entities.append(
                 WebBoilerGenericSensor(
                     hass,

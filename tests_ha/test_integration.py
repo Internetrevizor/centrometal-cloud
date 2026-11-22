@@ -13,7 +13,7 @@ from homeassistant.helpers import entity_registry as er
 from pytest_homeassistant_custom_component.common import MockConfigEntry, mock_restore_cache_with_extra_data
 
 from .conftest import DOMAIN
-from .fake_centrometal import BIOTEC_L, BIOTEC_PLUS, EMAIL, PASSWORD, PELTEC2, wait_until
+from .fake_centrometal import BIOTEC_L, BIOTEC_PLUS, EMAIL, PELET_SET, PASSWORD, PELTEC2, wait_until
 
 
 async def _setup(hass, entry) -> None:
@@ -290,6 +290,38 @@ async def test_biotec_l_boiler_state_the_user_enabled_keeps_its_entity_id(hass, 
     assert entity_id == "sensor.biotec_l_b_state"
     assert registry.async_get(entity_id).hidden_by is None
     assert hass.states.get(entity_id).state == "OFF: Switched off"
+
+
+@pytest.mark.parametrize("boilers", [[BIOTEC_L]])
+async def test_biotec_l_return_temperature_keeps_its_entity_id(hass, entry):
+    """Named "Mixer Temperature" up to 1.2.0: the name changes, the entity ID does not."""
+    registry = er.async_get(hass)
+    registry.async_get_or_create(
+        "sensor", DOMAIN, "BTLSERIAL-B_Tpov1", config_entry=entry, suggested_object_id="biotec_l_mixer_temperature"
+    )
+    await _setup(hass, entry)
+    entity_id = _entity_id(hass, "sensor", "BTLSERIAL-B_Tpov1")
+    assert entity_id == "sensor.biotec_l_mixer_temperature"
+    assert hass.states.get(entity_id).name == "BioTec-L Return Temperature"
+    assert hass.states.get(entity_id).state == "unknown"
+
+
+# Cm Pelet-set
+
+
+@pytest.mark.parametrize("boilers", [[PELET_SET]])
+async def test_pelet_set_boiler_state_setup_and_missing_sensors(hass, entry, broker):
+    await _setup(hass, entry)
+    state_id = _entity_id(hass, "sensor", "PSSERIAL-B_STATE")
+    assert state_id == "sensor.cm_pelet_set_boiler_state"
+    assert hass.states.get(state_id).state == "S7-3: Standby, waiting for start conditions"
+    setup = hass.states.get(_entity_id(hass, "sensor", "PSSERIAL-B_KONF_STR"))
+    assert setup.state == "A.7.2"
+    assert setup.attributes["Boiler connection"] == "Accumulation tank via 3-way thermostatic valve"
+    assert hass.states.get(_entity_id(hass, "sensor", "PSSERIAL-B_Tak2")).state == "unknown"
+
+    await broker.publish("cmpelet", "PSSERIAL", {"B_STATE": "M-1"})
+    await wait_until(lambda: hass.states.get(state_id).state == "Unknown (M-1)")
 
 
 # Names
