@@ -86,13 +86,9 @@ Both come from the AndroFlo BioTec-Plus fork, where they were confirmed on a rea
 
 [![Open your Home Assistant instance and open this repository inside HACS.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Internetrevizor&repository=centrometal-cloud&category=integration)
 
-Or by hand:
-
-1. In Home Assistant, open **HACS**, then the **⋮** menu (top right) → **Custom repositories**.
-2. Repository: `https://github.com/Internetrevizor/centrometal-cloud`, type: **Integration** → **Add**.
-3. Search for **Centrometal Cloud** and **Download** it.
-4. Restart Home Assistant.
-5. Open **Settings → Devices & services → Add integration** and select **Centrometal Cloud**.
+1. In Home Assistant, open **HACS**, search for **Centrometal Cloud** and **Download** it (or use the button above).
+2. Restart Home Assistant.
+3. Open **Settings → Devices & services → Add integration** and select **Centrometal Cloud**.
 
 ### Manual installation
 
